@@ -1,0 +1,15 @@
+<form action="set_pre_session" method="get">
+    <button type="submit">Set Pre-session</button>
+</form>
+
+<form action="http://localtest.me/transfer" method="post">
+    <input id="ammount"    type="number" name="ammount"    placeholder="ammount">
+    <input id="target"     type="text"   name="target"     placeholder="target"><br>
+    <input id="csrf_token" type="hidden" name="csrf_token" value="{{ values.csrf_token }}">
+    <input type="submit"   value="Transfer Money">
+</form>
+
+<h2>DEBUG:</h2>
+{% for field, value in values.items() %}
+{{ field }}: {{ value }}<br/>
+{% endfor %}

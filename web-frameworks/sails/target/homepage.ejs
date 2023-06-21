@@ -1,0 +1,21 @@
+<% if (me){ %>
+    Welcome <%= me.fullName %>.<br>
+    Your <b>balance</b> is <%= me.balance %><br>
+    
+    <form action="logout" method="get">
+        <button type="submit">Logout</button>
+    </form><br>
+    <% } else { %>
+    <form action="login" method="get">
+        <button type="submit">Login</button>
+    </form>
+    <% } %>
+    
+        
+    <form action="transfer" method="post">
+        <input id="ammount"    type="number" name="ammount" placeholder="ammount">
+        <input id="target"     type="text"   name="target"  placeholder="target"><br>
+        <input id="csrf_token" type="hidden" name="_csrf"   value="<%= _csrf %>" />
+        <input type="submit"   value="Transfer Money">
+    </form>
+    

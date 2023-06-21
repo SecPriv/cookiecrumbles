@@ -1,0 +1,96 @@
+diff -Nru blog/blog.py target_blog/blog.py
+--- blog/blog.py	2022-07-14 19:50:12.000000000 +0200
++++ target_blog/blog.py	2022-07-14 19:31:15.000000000 +0200
+@@ -31,7 +31,7 @@
+ 
+ from tornado.options import define, options
+ 
+-define("port", default=8888, help="run on the given port", type=int)
++define("port", default=5000, help="run on the given port", type=int)
+ define("db_host", default="127.0.0.1", help="blog database host")
+ define("db_port", default=5432, help="blog database port")
+ define("db_database", default="blog", help="blog database name")
+@@ -76,7 +76,7 @@
+             xsrf_cookies=True,
+             cookie_secret="__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
+             login_url="/auth/login",
+-            debug=True,
++            debug=False,
+         )
+         super().__init__(handlers, **settings)
+ 
+@@ -215,6 +215,8 @@
+                 if not e:
+                     break
+                 slug += "-2"
++            author = await self.query(f"SELECT name FROM authors WHERE id = {self.current_user.id}")
++            title = f"{title} (published by {author[0]['name']})"
+             await self.execute(
+                 "INSERT INTO entries (author_id,title,slug,markdown,html,published,updated)"
+                 "VALUES (%s,%s,%s,%s,%s,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)",
+@@ -232,8 +234,8 @@
+         self.render("create_author.html")
+ 
+     async def post(self):
+-        if await self.any_author_exists():
+-            raise tornado.web.HTTPError(400, "author already created")
++        # if await self.any_author_exists():
++        #     raise tornado.web.HTTPError(400, "author already created")
+         hashed_password = await tornado.ioloop.IOLoop.current().run_in_executor(
+             None,
+             bcrypt.hashpw,
+@@ -275,6 +277,19 @@
+         )
+         if password_equal:
+             self.set_secure_cookie("blogdemo_user", str(author.id))
++
++            # #### THIS IS A PROPOSAL BUT DOES NOT FIX THE ISSUE
++            # ### https://github.com/tornadoweb/tornado/issues/3026
++            # del self.cookies['_xsrf'] # delete cookie
++
++            # if hasattr(self, '_xsrf_token'):
++            #     delattr(self, '_xsrf_token') # remove cached token
++
++            # if hasattr(self, '_raw_xsrf_token'):
++            #     delattr(self, '_raw_xsrf_token') # remove cached token
++
++            # self.xsrf_token # generate new token
++
+             self.redirect(self.get_argument("next", "/"))
+         else:
+             self.render("login.html", error="incorrect password")
+diff -Nru blog/docker-compose.yml target_blog/docker-compose.yml
+--- blog/docker-compose.yml	2022-07-14 19:50:12.000000000 +0200
++++ target_blog/docker-compose.yml	2022-07-14 17:40:13.000000000 +0200
+@@ -1,15 +1,16 @@
+-postgres:
+-  image: postgres:10.3
+-  environment:
+-    POSTGRES_USER: blog
+-    POSTGRES_PASSWORD: blog
+-    POSTGRES_DB: blog
+-  ports:
+-    - "3306"
+-blog:
+-  build: .
+-  links:
+-    - postgres
+-  ports:
+-    - "8888:8888"
+-  command: --db_host=postgres
++services:
++  postgres:
++    image: postgres:10.3
++    environment:
++      POSTGRES_USER: blog
++      POSTGRES_PASSWORD: blog
++      POSTGRES_DB: blog
++    ports:
++      - "3306"
++  blog:
++    build: .
++    links:
++      - postgres
++    ports:
++      - "8888:8888"
++    command: --db_host=postgres

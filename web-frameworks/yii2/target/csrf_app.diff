@@ -1,0 +1,115 @@
+diff -Nru basic/models/ContactForm.php target/models/ContactForm.php
+--- basic/models/ContactForm.php	2022-02-11 13:26:38.000000000 +0000
++++ target/models/ContactForm.php	2022-07-05 18:36:05.000000000 +0100
+@@ -28,7 +28,7 @@
+             // email has to be a valid email address
+             ['email', 'email'],
+             // verifyCode needs to be entered correctly
+-            ['verifyCode', 'captcha'],
++            ['verifyCode', 'validateTrue'],
+         ];
+     }
+ 
+@@ -42,6 +42,12 @@
+         ];
+     }
+ 
++    public function validateTrue($attribute, $params)
++    {
++        return true;
++    }
++
++
+     /**
+      * Sends an email to the specified email address using the information collected by this model.
+      * @param string $email the target email address
+diff -Nru basic/models/User.php target/models/User.php
+--- basic/models/User.php	2022-02-11 13:26:38.000000000 +0000
++++ target/models/User.php	2022-07-05 22:51:14.000000000 +0100
+@@ -25,6 +25,34 @@
+             'authKey' => 'test101key',
+             'accessToken' => '101-token',
+         ],
++        '102' => [
++            'id' => '102',
++            'username' => 'alice',
++            'password' => 'alice',
++            'authKey' => 'test102key',
++            'accessToken' => '102-token',
++        ],
++        '103' => [
++            'id' => '103',
++            'username' => 'bob',
++            'password' => 'bob',
++            'authKey' => 'test103key',
++            'accessToken' => '103-token',
++        ],
++        '104' => [
++            'id' => '104',
++            'username' => 'john_doe',
++            'password' => 'john_doe',
++            'authKey' => 'test104key',
++            'accessToken' => '104-token',
++        ],
++        '5' => [
++            'id' => '5',
++            'username' => 'attacker',
++            'password' => 'attacker',
++            'authKey' => 'test5key',
++            'accessToken' => '5-token',
++        ],
+     ];
+
+
+diff -Nru basic/views/site/contact.php target/views/site/contact.php
+--- basic/views/site/contact.php	2022-02-11 13:26:38.000000000 +0000
++++ target/views/site/contact.php	2022-07-05 22:51:14.000000000 +0100
+@@ -14,10 +14,18 @@
+ <div class="site-contact">
+     <h1><?= Html::encode($this->title) ?></h1>
+
++    <?php if (Yii::$app->user->identity == null): ?>
++            <p>Not logged in</p>
++    <?php endif; ?>
++
+     <?php if (Yii::$app->session->hasFlash('contactFormSubmitted')): ?>
+
+         <div class="alert alert-success">
+-            Thank you for contacting us. We will respond to you as soon as possible.
++            <?php if (Yii::$app->user->identity != null): ?>
++                Thank you user <b><?= Yii::$app->user->identity->username ?></b> for contacting us. We will respond to you as soon as possible.
++            <?php else: ?>
++                Thank you for contacting us. We will respond to you as soon as possible.
++            <?php endif; ?>
+         </div>
+
+         <p>
+@@ -51,10 +59,6 @@
+
+                     <?= $form->field($model, 'body')->textarea(['rows' => 6]) ?>
+
+-                    <?= $form->field($model, 'verifyCode')->widget(Captcha::className(), [
+-                        'template' => '<div class="row"><div class="col-lg-3">{image}</div><div class="col-lg-6">{input}</div></div>',
+-                    ]) ?>
+-
+                     <div class="form-group">
+                         <?= Html::submitButton('Submit', ['class' => 'btn btn-primary', 'name' => 'contact-button']) ?>
+                     </div>
+diff -Nru basic/views/site/index.php target/views/site/index.php
+--- basic/views/site/index.php	2022-02-11 13:26:38.000000000 +0000
++++ target/views/site/index.php	2022-07-06 00:36:21.000000000 +0100
+@@ -10,7 +10,13 @@
+         <h1 class="display-4">Congratulations!</h1>
+ 
+         <p class="lead">You have successfully created your Yii-powered application.</p>
+-
++       
++        <?php if (Yii::$app->user->identity != null): ?>
++            <p>Hello <?= Yii::$app->user->identity->username ?>!</p>
++        <?php else: ?>
++            <p>Currently not logged in.</p>
++        <?php endif; ?>
++        
+         <p><a class="btn btn-lg btn-success" href="http://www.yiiframework.com">Get started with Yii</a></p>
+     </div>
+ 

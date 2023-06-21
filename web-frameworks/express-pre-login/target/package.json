@@ -1,0 +1,16 @@
+{
+  "name": "Express PoC. Syncronizer Token Pattern.",
+  "version": "1.0.0",
+  "main": "app.js",
+  "license": "ISC",
+  "//": "express-session-fixation, prevents session fixation", 
+  "dependencies": {
+    "express": "4.18.1",
+    "passport": "0.5.3",
+    "csurf": "1.11.0",
+    "ejs": "",
+    "express-session": "",
+    "express-session-fixation": "",
+    "passport-local": ""
+  }
+}

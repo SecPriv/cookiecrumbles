@@ -1,0 +1,13 @@
+<form action="set_pre_session" method="get">
+    <button type="submit">Set Pre-session</button>
+</form>
+
+<form action="http://localtest.me/en/admin/post/1/delete" method="post">
+    <input id="csrf_token" type="hidden" name="token" value="{{ values.csrf_token }}">
+    <input type="submit"   value="Try CORF">
+</form>
+
+<h2>DEBUG:</h2>
+{% for field, value in values.items() %}
+{{ field }}: {{ value }}<br/>
+{% endfor %}

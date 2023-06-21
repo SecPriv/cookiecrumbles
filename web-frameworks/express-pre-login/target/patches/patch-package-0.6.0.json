@@ -1,0 +1,21 @@
+--- package.json	2023-06-18 19:30:55
++++ package-0.6.0.json	2023-06-18 19:29:50
+@@ -1,16 +1,14 @@
+ {
+-  "name": "Express PoC. Syncronizer Token Pattern.",
++  "name": "Express PoC. Syncronizer Token Pattern. Fixed version.",
+   "version": "1.0.0",
+   "main": "app.js",
+   "license": "ISC",
+-  "//": "express-session-fixation, prevents session fixation", 
+   "dependencies": {
+     "express": "4.18.1",
+-    "passport": "0.5.3",
++    "passport": "0.6.0",
+     "csurf": "1.11.0",
+     "ejs": "",
+     "express-session": "",
+-    "express-session-fixation": "",
+     "passport-local": ""
+   }
+ }

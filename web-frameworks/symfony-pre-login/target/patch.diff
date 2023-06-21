@@ -1,0 +1,29 @@
+diff --color -Nru demo/config/packages/framework.yaml target/config/packages/framework.yaml
+--- demo/config/packages/framework.yaml	2023-06-21 10:36:50
++++ target/config/packages/framework.yaml	2023-06-21 09:49:10
+@@ -10,6 +10,7 @@
+         handler_id: null
+         cookie_secure: auto
+         cookie_samesite: lax
++        cookie_domain: localtest.me
+         storage_factory_id: session.storage.factory.native
+ 
+     # When using the HTTP Cache, ESI allows to render page fragments separately
+diff --color -Nru demo/templates/default/homepage.html.twig target/templates/default/homepage.html.twig
+--- demo/templates/default/homepage.html.twig	2023-06-21 10:36:45
++++ target/templates/default/homepage.html.twig	2023-06-21 08:35:39
+@@ -40,5 +40,14 @@
+                 </p>
+             </div>
+         </div>
++
++        <form action="http://any_address.com" method="post" data-confirmation="true" id="delete-form">
++            <input type="hidden" name="token" value="{{ csrf_token('delete') }}" />
++            <button type="submit" class="btn btn-lg btn-block btn-danger">
++            <i class="fa fa-trash" aria-hidden="true"></i>
++            {{ 'action.delete_post'|trans }}
++            </button>
++        </form>
++
+     </div>
+ {% endblock %}

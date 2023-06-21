@@ -1,0 +1,3 @@
+flask==2.1.2
+Flask-WTF==1.0.1
+git+https://github.com/maxcountryman/flask-login@main#egg=Flask-Login

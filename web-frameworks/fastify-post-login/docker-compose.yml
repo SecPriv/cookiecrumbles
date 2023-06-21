@@ -1,0 +1,22 @@
+services:
+  target:
+    build: 
+      context: target
+      target: "${VERSION:?VERSION is undefined}"
+  attacker:
+    build: attacker-cookies
+    environment:
+      PROTOCOL: "${PROTOCOL:?PROTOCOL is undefined}"
+      MODE: 'user'
+    extra_hosts:
+    - "localtest.me:${LOCAL_IP:?LOCAL_IP is undefined}"
+    depends_on:
+      - target
+  server:
+    build: server
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - target
+      - attacker

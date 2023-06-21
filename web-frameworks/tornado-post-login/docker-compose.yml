@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:10.3
+    environment:
+      POSTGRES_USER: blog
+      POSTGRES_PASSWORD: blog
+      POSTGRES_DB: blog
+    ports:
+      - "5432"
+  target:
+    build: 
+      context: target_blog
+      target: "${VERSION:?VERSION is undefined}"
+    links:
+      - postgres
+    command: --db_host=postgres
+  attacker:
+    build: attacker_blog
+    environment:
+      PROTOCOL: "${PROTOCOL:?PROTOCOL is undefined}"
+    extra_hosts:
+    - "localtest.me:${LOCAL_IP:?LOCAL_IP is undefined}"
+    depends_on:
+      - target
+  server:
+    build: server
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - target
+      - attacker

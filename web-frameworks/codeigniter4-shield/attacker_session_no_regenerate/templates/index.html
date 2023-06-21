@@ -1,0 +1,14 @@
+<form action="set_pre_session" method="get">
+    <button type="submit">Set Pre-session</button>
+    <button formaction="remove">Remove cookie</button>
+</form>
+
+<form action="{{ protocol }}://localtest.me/submitForm" method="post">
+    <input id="csrf_token" type="hidden" name="csrf_test_name"   value="{{ values.csrf_token }}">
+    <input type="submit"   value="Submit Protected Form">
+</form>
+
+<h2>DEBUG:</h2>
+{% for field, value in values.items() %}
+{{ field }}: {{ value }}<br/>
+{% endfor %}

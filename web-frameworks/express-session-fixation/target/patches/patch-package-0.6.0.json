@@ -1,0 +1,16 @@
+--- package.json	2023-06-18 22:01:13
++++ package-0.6.0.json	2023-06-18 21:51:57
+@@ -1,11 +1,11 @@
+ {
+-  "name": "Express PoC. Session Fixation.",
++  "name": "Express PoC. Session Fixation. Fixed version.",
+   "version": "1.0.0",
+   "main": "app.js",
+   "license": "ISC",
+   "dependencies": {
+     "express": "4.18.1",
+-    "passport": "0.5.3",
++    "passport": "0.6.0",
+     "csurf": "1.11.0",
+     "ejs": "",
+     "express-session": "",

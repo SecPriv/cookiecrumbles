@@ -1,0 +1,10 @@
+<form action="login" method="post">
+    <input id="username" type="text" name="username" placeholder="username">
+    <input id="password" type="text" name="password" placeholder="password"><br>
+    <input type="submit" value="Login">
+</form>
+
+<h2>DEBUG:</h2>
+<b>session:    </b> <%= debug_sessionID %><br>
+<b>CSRF secret:</b> <%= debug_csrf_secret %><br>
+<b>CSRF token: </b> <%= csrf_token %><br>

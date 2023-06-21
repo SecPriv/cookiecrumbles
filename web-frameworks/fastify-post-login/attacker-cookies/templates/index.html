@@ -1,0 +1,34 @@
+{% if mode == 'user' %}
+<form method="GET" action="set_post_session">
+    <p><label>Username for token: <input type="text" name="username"/></label></p>
+    <button type="submit">Set Post-session</button>
+</form>
+{% else %}
+<form method="GET" action="set_post_session">
+    <input type="hidden" name="username" value=""/>
+    <button type="submit">Set Post-session</button>
+</form>
+{% endif %}
+
+
+<form action="{{ protocol }}://localtest.me/transfer" method="post">
+    <input id="ammount"    type="number" name="ammount" placeholder="ammount">
+    <input id="target"     type="text"   name="target"  placeholder="target"><br>
+    <input id="csrf_token" type="hidden" name="_csrf"   value="{{ values.csrf_token }}">
+    <input type="submit"   value="Transfer Money">
+</form>
+
+<form action="{{ protocol }}://localtest.me/transfer" method="post">
+    <input id="ammount"    type="number" name="ammount" placeholder="ammount">
+    <input id="target"     type="text"   name="target"  placeholder="target"><br>
+    <input id="csrf_token" type="hidden" name="_csrf"   value="BLA">
+    <input type="submit"   value="Fail Transfer Money (Wrong token)">
+</form>
+
+<h2>DEBUG:</h2>
+{% for field, value in values.items() %}
+{{ field }}: {{ value }}<br/>
+{% endfor %}
+<br>
+<b>mode:     </b> {{ mode }}<br/>
+<b>protocol: </b> {{ protocol }}<br/>

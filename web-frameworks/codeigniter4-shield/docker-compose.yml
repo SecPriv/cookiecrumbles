@@ -1,0 +1,36 @@
+services:
+  target:
+    build: 
+      context: target
+      target: "${VERSION:-}${MODE:?MODE is undefined}"
+    depends_on:
+      db:
+        condition: service_healthy
+  attacker:
+    build: "attacker_$MODE"
+    environment:
+      PROTOCOL: "${PROTOCOL:?PROTOCOL is undefined}"
+    extra_hosts:
+    - "localtest.me:${LOCAL_IP:?LOCAL_IP is undefined}"
+    depends_on:
+      - target
+  server:
+    build: server
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - target
+      - attacker
+  db:
+    # image: mysql:5.7
+    image: mariadb:10.5.8
+    environment:
+      MYSQL_ROOT_PASSWORD: 'root'
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/
+    healthcheck:
+      test: "/usr/bin/mysql --user=root --password=root --execute \"SHOW DATABASES;\""
+      interval: 2s
+      timeout: 60s
+      retries: 10

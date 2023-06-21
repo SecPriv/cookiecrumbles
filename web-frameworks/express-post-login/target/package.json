@@ -1,0 +1,18 @@
+{
+  "name": "Express PoC. Double Submit",
+  "version": "1.0.0",
+  "main": "app.js",
+  "license": "ISC",
+  "//": "express-session-fixation, prevents session fixation",
+  "//": "cookie-parser, to test double-submit",
+  "dependencies": {
+    "express": "4.18.1",
+    "passport": "0.5.3",
+    "csurf": "1.11.0",
+    "ejs": "",
+    "express-session": "",
+    "express-session-fixation": "",
+    "passport-local": "",
+    "cookie-parser": ""
+  }
+}

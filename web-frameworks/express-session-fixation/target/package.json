@@ -1,0 +1,14 @@
+{
+  "name": "Express PoC. Session Fixation.",
+  "version": "1.0.0",
+  "main": "app.js",
+  "license": "ISC",
+  "dependencies": {
+    "express": "4.18.1",
+    "passport": "0.5.3",
+    "csurf": "1.11.0",
+    "ejs": "",
+    "express-session": "",
+    "passport-local": ""
+  }
+}
