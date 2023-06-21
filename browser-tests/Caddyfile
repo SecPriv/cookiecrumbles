@@ -1,0 +1,18 @@
+{
+  https_port 443
+  local_certs
+  admin off
+  auto_https disable_redirects
+
+  log default {
+    level ERROR
+  }
+}
+
+cookies.localtest.me {
+  reverse_proxy server:3000
+}
+
+sub.cookies.localtest.me {
+  reverse_proxy server:3000
+}

@@ -1,0 +1,37 @@
+#ifndef PRELUDE_INC
+#define PRELUDE_INC
+
+(******************************************************************************)
+(* Declarations                                                               *)
+
+(* Constants *)
+const appdotcom: DomainName.
+letfun apphost() = domain(appdotcom).  (* host of the app *)
+(* Note: the attacker controls a subdomain of the app website *)
+
+const appsecret: bitstring [private]. (* Flask/wtforms secret key *)
+
+(* Application Paths *)
+fun loginpath(): Path.  (* /app/login *)
+fun logoutpath(): Path. (* /app/logout *)
+fun actionpath(): Path. (* /action/:id: *)
+
+(* Pages / Forms *)
+type CSRFToken.
+
+fun emptyPage(): bitstring [data].
+fun loginSuccessPage(): bitstring [data].
+fun logoutSuccessPage(): bitstring [data].
+fun actionSuccessPage(): bitstring [data].
+
+fun loginForm(CSRFToken) : bitstring [data].
+fun loginData(Id, Secret, CSRFToken) : Params [data].
+
+fun actionForm(CSRFToken) : bitstring [data].
+fun actionData(bool, CSRFToken) : Params [data].
+
+(* App storage *)
+table RegisteredUsers(Id, Secret).
+
+
+#endif

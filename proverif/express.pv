@@ -1,0 +1,110 @@
+#include "prelude.inc.pv"
+
+(******************************************************************************)
+(* EXPRESS                                                                    *)
+
+type CSRFSecret.
+
+(* express-session *)
+letfun make_cookie_value() =
+  new session_id: bitstring;
+  (* cookies are of the form `connect.sid=s:sessionID.base64(HMAC_SHA256(secret, sessionID))`
+     with `sessionID` generated using `uid-safe(24)` *)
+  let session_mac = mac(session_id, keygen(appsecret)) in
+  (session_id, session_mac).
+
+letfun validate_cookie_value(s: bitstring) =
+  let (session_id: bitstring, session_mac: Mac) = s in
+  let correct_mac = mac(session_id, keygen(appsecret)) in
+  session_mac = correct_mac.
+
+fun csrftoken(bitstring, Hash) : CSRFToken [data].
+
+letfun make_csrf_token(c_secret: CSRFSecret) =
+  new salt: bitstring;
+  (* CSRFTokens are of the form `salt + '-' + base64(SHA1(salt + '-' + csrfSecret))`
+     with `salt = rndm(this.saltLength)` *)
+  (* /* https://github.com/pillarjs/csrf/blob/f0d66c91ea4be6d30a03bd311ed9518951d9c3e4/index.js#L112 */ *)
+  csrftoken(salt, hash((salt, c_secret))).
+
+
+fun nullId(): Id [data].
+
+table Sessions(bitstring, Id, CSRFSecret).
+
+fun nullSecret(): CSRFSecret [data].
+fun session(bitstring, Id, CSRFSecret, bool): Session [data].
+
+fun nullSessionId(): bitstring [data].
+
+letfun empty_session() =
+  session(nullSessionId(), nullId(), nullSecret(), false).
+
+letfun valid_session(s: Session) =
+  s <> empty_session().
+
+letfun is_loggedin(s: Session) =
+  let session(sid, id, c_, r_) = s in
+  id <> nullId().
+
+letfun generate_token(s: Session) =
+  let session(sid, id_, c, r_) = s in
+  new token: CSRFSecret;
+  session(sid, id_, token, r_).
+
+letfun login_user(s: Session, userid: Id) =
+#ifdef REFRESH_TOKEN_LOGIN
+  let session(sid, id, c_, r_) = generate_token(s) in
+#else
+  let session(sid, id, c_, r_) = s in
+#endif
+#ifdef REFRESH_SESSION_ID
+  session(sid, userid, c_, true).
+#else
+  session(sid, userid, c_, r_).
+#endif
+
+letfun logout_user(s: Session) =
+  let session(sid, id, c_, r_) =s in
+  session(sid, nullId(), c_, r_).
+
+letfun serialize_token(s: Session) =
+  let session(sid, id_, c, r_) = s in
+  make_csrf_token(c).
+
+letfun validate_token(s: Session, token: CSRFToken) =
+  let session(sid, id_, c, r_) = s in
+  let csrftoken(salt, thash) = token in
+  let correct_hash = hash((salt, c)) in
+  thash = correct_hash.
+
+
+letfun session_from_cookie(cp: CookiePair) =
+ let cookiePair(session_cookie, path_cookie) = cp in
+   let (session_id: bitstring, session_mac: Mac) = securejs(session_cookie) in
+     if validate_cookie_value((session_id, session_mac)) then
+       get Sessions(=session_id, id, csrfsecret) in
+       session(session_id, id, csrfsecret, false)
+     else empty_session()
+   else empty_session()
+ else empty_session().
+
+letfun cookie_of_session(s: Session) =
+  let session(sid, id, c_secret, refresh) = s in
+  if sid <> nullSessionId() && not (refresh) then
+    insert Sessions(sid, id, c_secret);
+    cookiePair(sjcookie((sid, mac(sid, keygen(appsecret)))), nullCookie())
+  else
+    let (session_id: bitstring, session_mac: Mac) = make_cookie_value() in
+    insert Sessions(session_id, id, c_secret);
+    cookiePair(sjcookie((session_id, session_mac)), nullCookie()).
+
+
+(******************************************************************************)
+(* Main                                                                       *)
+
+#include "queries.inc.pv"
+#include "application.inc.pv"
+#include "attacker.inc.pv"
+#include "user_agent.inc.pv"
+#include "main_process.inc.pv"

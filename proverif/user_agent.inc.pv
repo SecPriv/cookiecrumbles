@@ -1,0 +1,32 @@
+#ifndef UA_INC
+#define UA_INC
+
+#include "prelude.inc.pv"
+#include "queries.inc.pv"
+#include "attacker.inc.pv"
+
+(******************************************************************************)
+(* User/UserAgent behavior                                                    *)
+
+let UA(b:Browser, userid: Id, userpwd: Secret) =
+( (* Visit the attacker page *)
+  (let attackerURI = uri(https(), evilhost(), slash(), nullParams()) in
+   out(browserRequest(b), (attackerURI, httpGet())))
+| (* Visit the login page *)
+  (let loginURI = uri(https(), apphost(), loginpath(), nullParams()) in
+   out(browserRequest(b), (loginURI, httpGet())))
+| (* When the login page loads, enter the credentials and login *)
+  (in(newPage(b),(p1:Page,=uri(https(), apphost(), loginpath(), nullParams()), loginForm(token)));
+   event user_login_begin(b, userid, userpwd, token);
+   out(pageClick(b), (p1, uri(https(), apphost(), loginpath(), nullParams()),
+       httpPost(loginData(userid, userpwd, token)))))
+| (* Visit the action page *)
+  (let actionURI = uri(https(), apphost(), actionpath(), nullParams()) in
+   out(browserRequest(b), (actionURI, httpGet())))
+| (* When the action page loads, submit the form *)
+  (in(newPage(b),(p1:Page,=uri(https(), apphost(), actionpath(), nullParams()), actionForm(token)));
+   event app_action_begin(b, token);
+   out(pageClick(b), (p1, uri(https(), apphost(), actionpath(), nullParams()),
+       httpPost(actionData(true, token)))))).
+
+#endif

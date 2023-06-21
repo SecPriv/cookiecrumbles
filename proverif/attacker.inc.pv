@@ -1,0 +1,31 @@
+#ifndef ATTACKER_INC
+#define ATTACKER_INC
+
+(******************************************************************************)
+(* Attacker controlled app on a related domain                                *)
+
+const evil: DomainName.
+letfun evilhost() = subdomain(evil, appdotcom). (* host of the attacker-controlled app *)
+(* Note: the attacker controls a subdomain of the app website *)
+
+
+let AttackerApp(h:Host) = 
+  (in(httpServerRequest,(u:Uri,hs:Headers,r:HttpRequest,corr:bitstring));
+   let uri(=https(), =h, p, q) = u in
+   (* The attacker can read the request but it __is not able to access cookies__. *)
+   (* Related domains do not receive cookies that do not have the `Domain` property *)
+   (* explicitly set to a parent domain. *)
+   out(pub, (u, r));
+   (* The attacker is able to set cookies *)
+   (* An attacker on a related domain can set a cookie with the `Domain` property *)
+   (* set as a parent domain so that also the parent domain and all sibling receive the cookie. *)
+   (* Note that in the real world cookie priority rules apply: *)
+   (* If there is already a session cookie, the newly set domain cookie will not be seen *)
+   (* unless it is set with a more specific `Path` attribute. *)
+   (* For example, if we have a `session` with `Domain=a.example.com` and `Path=/` *)
+   (* An attacker can "overwrite" it only if they set a `session` with, for example, *)
+   (* `Domain=example.com` and Path=`/login` *)
+   in(pub, (rp:HttpResponse, cp: CookiePair));
+   out(httpServerResponse, (u, rp, cp, corr))). (* The attacker can set cookies *)
+
+#endif

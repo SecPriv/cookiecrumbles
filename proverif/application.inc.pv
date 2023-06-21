@@ -1,0 +1,76 @@
+#ifndef APPLICATION_INC
+#define APPLICATION_INC
+
+#include "prelude.inc.pv"
+#include "queries.inc.pv"
+
+
+(******************************************************************************)
+(* App behavior                                                               *)
+
+let App(h:Host) =
+(
+  (* GET login: Generate the login form with CSRF protection *)
+  (in(httpServerRequest,(u:Uri, hs:Headers, =httpGet(), corr:bitstring));
+   let uri(=https(), =h, =loginpath(), =nullParams()) = u in
+   let s = session_from_cookie(getCookie(hs)) in
+   if valid_session(s) then (
+     if is_loggedin(s) then (
+       out(httpServerResponse, (u, httpOk(emptyPage()), getCookie(hs), corr)))
+     else (
+       let csrf_token = serialize_token(s) in
+       out(httpServerResponse,(u, httpOk(loginForm(csrf_token)), getCookie(hs), corr))))
+   else (
+     if getCookie(hs) = nullCookiePair() then
+     let new_session = generate_token(s) in
+     let csrf_token = serialize_token(new_session) in
+     let cp = cookie_of_session(new_session) in
+     event app_gen_token(cp, csrf_token);
+     out(httpServerResponse,(u, httpOk(loginForm(csrf_token)), cp, corr))))
+|
+  (* POST login: Perform the login if the CSRFToken is correct *)
+  (in(httpServerRequest,(u:Uri, hs:Headers, httpPost(form_data), corr:bitstring));
+   let uri(=https(), =h, =loginpath(), =nullParams()) = u in
+   let s = session_from_cookie(getCookie(hs)) in
+   if valid_session(s) then
+   let loginData(userid, userpwd, csrf_token) = form_data in
+   if validate_token(s, csrf_token) && not ( is_loggedin(s) ) then
+   get RegisteredUsers(=userid, =userpwd) in
+   event app_login(getCookie(hs), userid, userpwd, csrf_token);
+   let new_session = login_user(s, userid) in
+   let cp = cookie_of_session(new_session) in
+   out(httpServerResponse, (u, httpOk(loginSuccessPage()), cp, corr)))
+|
+  (* GET logout: Log the user out *)
+  (in(httpServerRequest,(u:Uri, hs:Headers, =httpGet(), corr:bitstring));
+   let uri(=https(), =h, =logoutpath(), =nullParams()) = u in
+   let s = session_from_cookie(getCookie(hs)) in
+   if valid_session(s) && is_loggedin(s) then
+#ifdef REFRESH_TOKEN_LOGIN
+   (* Fix non termination: set empty cookie on logout *)
+   let cp = nullCookiePair() in
+#else
+   let new_session = logout_user(s) in
+   let cp = cookie_of_session(new_session) in
+#endif
+   event app_logout(cp);
+   out(httpServerResponse, (u, httpOk(logoutSuccessPage()), cp, corr)))
+|
+  (* GET action:  generate the action form with CSRF protection *)
+  (in(httpServerRequest,(u:Uri, hs:Headers, =httpGet(), corr:bitstring));
+   let uri(=https(), =h, =actionpath(), =nullParams()) = u in
+   let s = session_from_cookie(getCookie(hs)) in
+   if valid_session(s) && is_loggedin(s) then
+   let csrf_token = serialize_token(s) in
+   out(httpServerResponse, (u, httpOk(actionForm(csrf_token)), getCookie(hs), corr)))
+|
+  (* POST action: Perform the action if the CSRFToken is correct *)
+  (in(httpServerRequest,(u:Uri, hs:Headers, httpPost(actionData(=true, csrf_token)), corr:bitstring));
+   let uri(=https(), =h, =actionpath(), =nullParams()) = u in
+   let s = session_from_cookie(getCookie(hs)) in
+   if valid_session(s) && is_loggedin(s) && validate_token(s, csrf_token) then
+   event app_action_successful(getCookie(hs), csrf_token);
+   out(httpServerResponse, (u, httpOk(actionSuccessPage()), getCookie(hs), corr)))
+).
+
+#endif

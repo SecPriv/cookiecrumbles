@@ -1,0 +1,29 @@
+#ifndef QUERIES_INC
+#define QUERIES_INC
+
+(******************************************************************************)
+(* Events and queries                                                         *)
+
+event app_gen_token(CookiePair, CSRFToken).
+event app_login(CookiePair, Id, Secret, CSRFToken).
+event app_logout(CookiePair).
+event user_login_begin(Browser, Id, Secret, CSRFToken).
+
+event app_action_begin(Browser, CSRFToken).
+event app_action_successful(CookiePair, CSRFToken).
+
+(* Reachability: check that all events are reachable *)
+query b:Browser, cp:CookiePair, token:CSRFToken, id:Id, pwd: Secret;
+  event ( app_gen_token(cp, token) );
+  event ( app_login(cp, id, pwd, token) );
+  event ( app_logout(cp) );
+  event ( user_login_begin(b, id, pwd, token) );
+  event ( app_action_successful(cp, token) );
+  event ( app_action_begin(b, token) ).
+
+(* Correspondence: check for CSRF in the action endpoint *)
+query b:Browser, cp:CookiePair, token:CSRFToken;
+      event ( app_action_successful(cp, token) ) ==>
+      event ( app_action_begin(b, token) ).
+
+#endif

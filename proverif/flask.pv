@@ -1,0 +1,87 @@
+#include "prelude.inc.pv"
+
+(******************************************************************************)
+(* FLASK                                                                      *)
+
+type CSRFTokenGen.
+
+(* Flask Sessions *)
+(* The flask session is encoded, signed and stored in the cookie *)
+fun encodeSession(bitstring, symkey): bitstring [private].
+reduc forall b:bitstring, s:symkey; verifyDecodeSession(encodeSession(b, s), s) = b.
+reduc forall b:bitstring, s:symkey; decodeSession(encodeSession(b, s)) = b.
+
+(* Flask WTF CSRF tokens *)
+(* csrf tokens are stored in the session, then serialized and signed with a secret key and *)
+(* /* appended to each form. ref: https://github.com/wtforms/flask-wtf/blob/main/src/flask_wtf/csrf.py */ *)
+(* URLSafeTimedSerializer.dumps() *)
+fun serialize(CSRFTokenGen, symkey) : CSRFToken.
+(* URLSafeTimedSerializer.loads() *)
+reduc forall token:CSRFTokenGen, key:symkey; validateDeserialize( serialize(token, key), key ) = token.
+reduc forall token:CSRFTokenGen, key:symkey; deserialize( serialize(token, key) ) = token.
+
+(******************************************************************************)
+(* Impl Flask                                                                 *)
+
+fun nullToken(): CSRFTokenGen [data].
+fun session(bool, CSRFTokenGen): Session [data].
+
+letfun empty_session() =
+  session(false, nullToken()).
+
+letfun session_from_cookie(cp: CookiePair) = 
+ let cookiePair(session_cookie, path_cookie) = cp in
+   let value = securejs(session_cookie) in
+     let (lgin: bool, tkn: CSRFTokenGen) = verifyDecodeSession(value, keygen(appsecret)) in
+        session(lgin, tkn)
+     else empty_session()
+  else empty_session()
+else empty_session().
+
+letfun valid_session(s: Session) =
+  s <> empty_session().
+
+letfun cookie_of_session(s: Session) = 
+  let session(lin,tkn) = s in
+  let content: bitstring = (lin, tkn) in
+  cookiePair(sjcookie(encodeSession(content, keygen(appsecret))), nullCookie()).
+
+letfun is_loggedin(s: Session) =
+  let session(lin, t__) = s in
+  lin.
+
+letfun generate_token(s: Session) =
+  let session(lin, tkn) = s in
+  new token: CSRFTokenGen;
+  session(lin, token).
+
+letfun login_user(s: Session, u: Id) = 
+#ifdef REFRESH_TOKEN_LOGIN
+  let session(lin, tkn) = generate_token(s) in
+#else
+  let session(lin, tkn) = s in
+#endif
+  session(true, tkn).
+
+letfun logout_user(s: Session) = 
+  let session(lin, tkn) = s in
+  session(false, tkn).
+
+letfun serialize_token(s: Session) = 
+  let session(lin__, token) = s in
+  serialize(token, keygen(appsecret)).
+
+letfun validate_token(s: Session, token: CSRFToken) = 
+  let gtoken = validateDeserialize(token, keygen(appsecret)) in
+  let session(lin__, stoken) = s in
+  gtoken = stoken.
+
+
+(******************************************************************************)
+(* Main                                                                       *)
+
+#include "queries.inc.pv"
+#include "application.inc.pv"
+#include "attacker.inc.pv"
+#include "user_agent.inc.pv"
+#include "main_process.inc.pv"

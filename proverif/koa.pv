@@ -1,0 +1,87 @@
+#include "prelude.inc.pv"
+
+(******************************************************************************)
+(* KOA                                                                        *)
+
+type CSRFSecret.
+
+fun csrftoken(bitstring, Hash) : CSRFToken [data].
+
+fun nullSecret(): CSRFSecret [data].
+fun session(Id, CSRFSecret): Session [data].
+
+fun nullId(): Id [data].
+
+letfun empty_session() =
+  session(nullId(), nullSecret()).
+
+letfun valid_session(s: Session) =
+  s <> empty_session().
+
+letfun is_loggedin(s: Session) =
+  let session(id, c_) = s in
+  id <> nullId().
+
+letfun generate_token(s: Session) =
+  let session(id_, c) = s in
+  new token: CSRFSecret;
+  session(id_, token).
+
+letfun login_user(s: Session, userid: Id) =
+#ifdef REFRESH_TOKEN_LOGIN
+  let session(id, c_) = generate_token(s) in
+#else
+  let session(id, c_) = s in
+#endif
+  session(userid, c_).
+
+letfun logout_user(s: Session) =
+  let session(id, c_) = s in
+  session(nullId(), c_).
+
+
+
+letfun make_csrf_token(c_secret: CSRFSecret) =
+  new salt: bitstring;
+  (* CSRFTokens are of the form `salt + '-' + base64(SHA1(salt + '-' + csrfSecret))` 
+     with `salt = rndm(this.saltLength)` *)
+  (* /* https://github.com/pillarjs/csrf/blob/f0d66c91ea4be6d30a03bd311ed9518951d9c3e4/index.js#L112 */ *)
+  csrftoken(salt, hash((salt, c_secret))).
+
+letfun serialize_token(s: Session) =
+  let session(id_, c) = s in
+  make_csrf_token(c).
+
+letfun validate_token(s: Session, token: CSRFToken) =
+  let session(id_, c) = s in
+  let csrftoken(salt, thash) = token in
+  let correct_hash = hash((salt, c)) in
+  thash = correct_hash.
+
+letfun cookie_of_session(s: Session) =
+  (* koa.sess=base64({"passport":{"user":"user"},"secret":"_AtFSmjD0sFLWuiDR_FJuhgd","_expire":1652199623954,"_maxAge":86400000})
+     koa.sess.sig=base64(HMAC_SHA1(sig_key, <cookie.name>=<cookie.value>)) *)
+  let session(id, sec) = s in
+  let sess = (id, sec) in
+  let sess_sig = (sess, mac(sess, keygen(appsecret))) in
+  cookiePair(sjcookie(sess_sig), nullCookie()).
+
+letfun session_from_cookie(cp: CookiePair) =
+ let cookiePair(session_cookie, path_cookie) = cp in
+   let ((id: Id, sec: CSRFSecret), session_mac: Mac) = securejs(session_cookie) in
+     let new_mac = mac((id,sec), keygen(appsecret)) in
+     if session_mac = new_mac then
+       session(id, sec)
+     else empty_session()
+   else empty_session()
+ else empty_session().
+
+
+(******************************************************************************)
+(* Main                                                                       *)
+
+#include "queries.inc.pv"
+#include "application.inc.pv"
+#include "attacker.inc.pv"
+#include "user_agent.inc.pv"
+#include "main_process.inc.pv"

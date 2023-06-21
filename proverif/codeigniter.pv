@@ -1,0 +1,90 @@
+#include "prelude.inc.pv"
+
+(******************************************************************************)
+(* PHP                                                                        *)
+
+letfun session_start(cj:CookiePair) =
+  let cookiePair(session_cookie, path_cookie__) = cj in
+  if session_cookie <> nullCookie() then
+    cj
+  else
+    new phpsessid: bitstring;
+    cookiePair(sjcookie(phpsessid), nullCookie()).
+
+
+(******************************************************************************)
+(* CODEIGNITER4                                                               *)
+
+table Sessions(CookiePair, Id, CSRFToken).
+
+fun nullSeed(): CSRFToken [data].
+fun session(CookiePair, Id, CSRFToken): Session [data].
+
+fun nullId(): Id [data].
+
+letfun empty_session() =
+  session(nullCookiePair(), nullId(), nullSeed()).
+
+letfun valid_session(s: Session) =
+  s <> empty_session().
+
+letfun is_loggedin(s: Session) =
+  let session(cp_, id, c_) = s in
+  id <> nullId().
+
+(* here Security::tokenRandomize is false (default) *)
+letfun generate_token(s: Session) =
+  let session(cp_, id_, c) = s in
+  (* $this->hash = bin2hex(random_bytes(static::CSRF_HASH_BYTES)); *)
+  new token: CSRFToken;
+  session(cp_, id_, token).
+
+letfun login_user(s: Session, userid: Id) =
+#ifdef REFRESH_TOKEN_LOGIN
+  let session(cp, id, seed) = generate_token(s) in
+  let new_cp = session_start(nullCookiePair()) in
+  session(new_cp, userid, seed).
+#else
+  let session(cp, id, seed) = s in
+  let new_cp = session_start(nullCookiePair()) in
+  new new_seed: CSRFToken;
+  insert Sessions(cp, id, new_seed);
+  session(new_cp, userid, new_seed).
+#endif
+
+letfun logout_user(s: Session) =
+  let session(cp_, id, c_) = s in
+  session(cp_, nullId(), c_).
+
+(* here Security::regenerate = false *)
+letfun serialize_token(s: Session) =
+  let session(cp_, id_, c) = s in
+  c.
+
+letfun validate_token(s: Session, token: CSRFToken) =
+   let session(cp_in, id, seed) = s in
+   seed = token.
+
+letfun session_from_cookie(cp_in: CookiePair) =
+  let cp = session_start(cp_in) in
+  get Sessions(=cp, id, seed) in
+   session(cp, id, seed)
+  else
+   empty_session().
+
+(* we only consider Security::csrfProtection = 'session' (DSP) *)
+letfun cookie_of_session(s: Session) =
+  let session(cp_in, id, seed) = s in
+  let cp = session_start(cp_in) in
+  insert Sessions(cp, id, seed);
+  cp.
+
+(******************************************************************************)
+(* Main                                                                       *)
+
+#include "queries.inc.pv"
+#include "application.inc.pv"
+#include "attacker.inc.pv"
+#include "user_agent.inc.pv"
+#include "main_process.inc.pv"
+

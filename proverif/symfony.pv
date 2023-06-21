@@ -1,0 +1,129 @@
+#include "prelude.inc.pv"
+
+(******************************************************************************)
+(* PHP                                                                        *)
+
+letfun session_start(cj:CookiePair) =
+  let cookiePair(session_cookie, path_cookie__) = cj in
+  if session_cookie <> nullCookie() then
+    cj
+  else
+    new phpsessid: bitstring;
+    cookiePair(sjcookie(phpsessid), nullCookie()).
+
+
+(******************************************************************************)
+(* SYMFONY                                                                    *)
+
+type CSRFTokenSeed.
+fun nullSeed(): CSRFTokenSeed [data].
+fun session(CookiePair, Id, CSRFTokenSeed): Session [data].
+
+fun nullId(): Id [data].
+
+letfun empty_session() =
+  session(nullCookiePair(), nullId(), nullSeed()).
+
+letfun valid_session(s: Session) =
+  s <> empty_session().
+
+letfun is_loggedin(s: Session) =
+  let session(cp_, id, c_) = s in
+  id <> nullId().
+
+letfun generate_token(s: Session) =
+  let session(cp_, id_, c) = s in
+  new token: CSRFTokenSeed;
+  session(cp_, id_, token).
+
+letfun login_user(s: Session, userid: Id) =
+#ifdef REFRESH_TOKEN_LOGIN
+  let session(cp_, id, c) = generate_token(s) in
+#else
+  let session(cp_, id, c) = s in
+#endif
+  let new_cp = session_start(nullCookiePair()) in
+  session(new_cp, userid, c).
+
+letfun logout_user(s: Session) =
+  let session(cp_, id, c_) = s in
+  session(cp_, nullId(), c_).
+
+
+fun csrftoken(Hash, bitstring, bitstring): CSRFToken [data].
+
+
+// the definition is the same, but xor is not authenticated + we need to convert some types (xor = enc)
+fun decodeCSRFTokenSeed(CSRFTokenSeed): bitstring [typeConverter].
+letfun enc(k: CSRFTokenSeed, d: bitstring) = aenc(decodeCSRFTokenSeed(k), keygen(d)).
+letfun dec(m: bitstring, d:bitstring) = adec(m, keygen(d)).
+
+(*
+private function randomize(string $value): string
+{
+    $key = random_bytes(32);
+    $value = $this->xor($value, $key);
+
+    return sprintf('%s.%s.%s', substr(md5($key), 0, 1 + (\ord($key[0]) % 32)), rtrim(strtr(base64_encode($key), '+/', '-_'), '='), rtrim(strtr(base64_encode($value), '+/', '-_'), '='));
+}
+*)
+letfun randomize(value: CSRFTokenSeed) =
+  new key: bitstring;
+  let nval = enc(value, key) in
+  csrftoken(hash(key), key, nval).
+
+(*
+private function derandomize(string $value): string
+{
+    $parts = explode('.', $value);
+    if (3 !== \count($parts)) {
+        return $value;
+    }
+    $key = base64_decode(strtr($parts[1], '-_', '+/'));
+    $value = base64_decode(strtr($parts[2], '-_', '+/'));
+
+    return $this->xor($value, $key);
+}
+*)
+letfun derandomize(t: CSRFToken) =
+  let csrftoken(hash__, key, encseed) = t in
+  dec(encseed, key).
+
+(* hash_equals($this->storage->getToken($namespacedId), $this->derandomize($token->getValue())); *)
+letfun is_token_equal(s: Session, token: CSRFToken) =
+  let session(cp_, id_, stoken) = s in
+  let token_seed = derandomize(token) in
+  hash(decodeCSRFTokenSeed(stoken)) = hash(token_seed).
+
+
+letfun serialize_token(s: Session) =
+  let session(cp_, id_, c) = s in
+  randomize(c).
+
+letfun validate_token(s: Session, token: CSRFToken) =
+  is_token_equal(s, token).
+
+table Sessions(CookiePair, Id, CSRFTokenSeed).
+
+letfun session_from_cookie(cp_in: CookiePair) =
+  let cp = session_start(cp_in) in
+  get Sessions(=cp, id, seed) in
+   session(cp, id, seed)
+  else
+   empty_session().
+
+letfun cookie_of_session(s: Session) =
+  let session(cp_in, id, seed) = s in
+  let cp = session_start(cp_in) in
+  insert Sessions(cp, id, seed);
+  cp.
+
+(******************************************************************************)
+(* Main                                                                       *)
+
+#include "queries.inc.pv"
+#include "application.inc.pv"
+#include "attacker.inc.pv"
+#include "user_agent.inc.pv"
+#include "main_process.inc.pv"
+

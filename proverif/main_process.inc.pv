@@ -1,0 +1,12 @@
+process
+  ( BrowserProcess() | HttpServer() | Network() (* Web-Spi built-in processes *)
+  (* Run the Application *)
+  | mkserver(apphost()) | !App(apphost())
+  (* Run the attacker controlled app on a related domain *)
+  | mkserver(evilhost()) | !AttackerApp(evilhost())
+  (* For every honest browser, create valid credentials and run the UA process *)
+  | !(in(pub, b:Browser);
+      new userid: Id;
+      new userpwd: Secret;
+      insert RegisteredUsers(userid, userpwd);
+      !UA(b, userid, userpwd)))

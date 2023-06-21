@@ -1,0 +1,14 @@
+version: '3'
+services:
+  php:
+    build: php/
+    ports:
+      - 1700:80
+  php-react:
+    build: php-react/
+    ports:
+      - 1701:80
+  werkzeug:
+    build: werkzeug/
+    ports:
+      - 1702:80
