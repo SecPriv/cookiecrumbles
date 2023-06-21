@@ -77,7 +77,7 @@ For this reason, we expect the output of our reachability query to return `canno
 
 Additional Details
 ------------------
-We refer to Appendix A of the extended version of the paper for additional details on the modeling of frameworks.
+We refer to Appendix B of the extended version of the paper for additional details on the modeling of frameworks.
 
 
 Setup
