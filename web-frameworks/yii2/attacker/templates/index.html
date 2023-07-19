@@ -2,13 +2,13 @@
     <button type="submit">Set Post-session</button>
 </form>
 
-<form method="POST" action="https://localtest.me/index.php?r=site%2Fcontact">
-    <input id = "csrf_token" name="_csrf" type="hidden" value="{{ session.token }}">
-    <input type="hidden" id="contactform-name" name="ContactForm[name]" value="ABCD">
-    <input type="hidden" id="contactform-email" name="ContactForm[email]" value="abcd@abcd.com">
+<form action="{{ protocol }}://localtest.me/index.php?r=site%2Fcontact" method="post">
+    <input type="hidden" id ="csrf_token"         name="{{ values.csrf_form_name }}" value="{{ values.csrf_token }}">
+    <input type="hidden" id="contactform-name"    name="ContactForm[name]"    value="ABCD">
+    <input type="hidden" id="contactform-email"   name="ContactForm[email]"   value="abcd@abcd.com">
     <input type="hidden" id="contactform-subject" name="ContactForm[subject]" value="ABCD">
-    <input type="hidden" id="contactform-body" name="ContactForm[body]" value="ABCD">
-    <input type="hidden" id="contactform-button" name="contact-button" value="">
+    <input type="hidden" id="contactform-body"    name="ContactForm[body]"    value="ABCD">
+    <input type="hidden" id="contactform-button"  name="contact-button"       value="">
     <input type="submit" value="Create Contact from the attacker.site">
 </form>
 

@@ -169,7 +169,7 @@ fastify.post(
         balance[req.body.target] += parseInt(req.body.ammount);
         balance[req.user] -= parseInt(req.body.ammount);
         console.log("Executing Trasfer\n" + req.body.ammount + " from " + req.user + " to " + req.body.target);
-        return "Successfull transferred " + req.body.ammount + " from " + req.user + " to " + req.body.target;
+        return "Successfully transferred " + req.body.ammount + " from " + req.user + " to " + req.body.target;
     }
   }
 )

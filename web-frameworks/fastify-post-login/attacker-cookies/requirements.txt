@@ -1,3 +1,4 @@
 beautifulsoup4
 flask
+flask_talisman
 requests

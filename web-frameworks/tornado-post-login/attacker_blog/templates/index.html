@@ -2,10 +2,10 @@
     <button type="submit">Set Post-session</button>
 </form>
 
-<form action="http://localtest.me/compose" method="post">
-    <input id="title"    name="title"    type="hidden" value="This post was created from the attacker.site">
-    <input id="markdown" name="markdown" type="text"   value="Any Adversarial Text">
-    <input id="_xsrf"    name="_xsrf"    type="hidden" value="{{ values.csrf_token }}">
+<form action="{{ protocol }}://localtest.me/compose" method="post">
+    <input id="title"    name="title"                       type="hidden" value="This post was created from the attacker.site">
+    <input id="markdown" name="markdown"                    type="text"   value="Any Adversarial Text">
+    <input id="_xsrf"    name="{{ values.csrf_form_name }}" type="hidden" value="{{ values.csrf_token }}">
     <input type="submit" value="Create Blog Post from the attacker.site">
 </form>
 

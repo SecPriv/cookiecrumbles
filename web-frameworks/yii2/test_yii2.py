@@ -1,9 +1,15 @@
 import requests
 from bs4 import BeautifulSoup
 import random
+import os
 
-TARGET = 'https://localtest.me/'
-ATTACKER = 'https://attack.localtest.me/'
+
+try:
+    PROTOCOL = os.environ['PROTOCOL']
+except:
+    PROTOCOL = 'http'
+TARGET = f'{PROTOCOL}://localtest.me/'
+ATTACKER = f'{PROTOCOL}://attack.localtest.me/'
 PRIVATE_KEY = './server/localtest.me.crt'
 USER1 = 'demo'
 USER2 = 'demo'
@@ -41,7 +47,7 @@ with requests.Session() as s:
     r = s.get(TARGET, verify = PRIVATE_KEY)
     assert NON_LOGIN_STRING in r.text
 
-    r = s.get(TARGET + 'index.php?r=site/login', verify = PRIVATE_KEY)
+    r = s.get(TARGET + 'index.php?r=site/login')
     ### Check csrf protected operation
     csrf_token = get_csrf_token(r.text)
     r = send_contact_yii2(csrf_token)
@@ -63,7 +69,7 @@ with requests.Session() as s:
 
 
 with requests.Session() as s:
-    print("[+] Testing pre-login CSRF attack")
+    print("[+] Testing post-login CSRF attack")
 
     ### TARGET LOGIN
     r_target = login_yii2(USER2)

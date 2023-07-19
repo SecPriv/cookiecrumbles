@@ -13,10 +13,10 @@ module.exports = {
     //  ╩  ╩╚═╩╩ ╩╩ ╩ ╩ ╚╝ ╚═╝╚═╝
 
     balance: {
-        type: 'number',
-        description: 'User balance',
-        example: 10
-      },
+      type: 'number',
+      description: 'User balance',
+      example: 10
+    },
 
     emailAddress: {
       type: 'string',

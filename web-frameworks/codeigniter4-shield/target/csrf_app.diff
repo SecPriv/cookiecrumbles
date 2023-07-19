@@ -1,6 +1,6 @@
-diff -Nru appstarter/app/Config/Auth.php target_local/app/Config/Auth.php
---- appstarter/app/Config/Auth.php	2022-07-12 17:09:44.000000000 +0200
-+++ target_local/app/Config/Auth.php	2022-07-07 16:49:38.000000000 +0200
+diff --color -Nru appstarter/app/Config/Auth.php target_local/app/Config/Auth.php
+--- appstarter/app/Config/Auth.php	2023-07-04 14:15:40
++++ target_local/app/Config/Auth.php	2023-07-03 17:02:07
 @@ -44,7 +44,7 @@
      public array $redirects = [
          'register' => '/',
@@ -10,9 +10,31 @@ diff -Nru appstarter/app/Config/Auth.php target_local/app/Config/Auth.php
      ];
  
      /**
-diff -Nru appstarter/app/Config/Filters.php target_local/app/Config/Filters.php
---- appstarter/app/Config/Filters.php	2022-06-16 15:53:27.000000000 +0200
-+++ target_local/app/Config/Filters.php	2022-07-12 15:26:00.000000000 +0200
+@@ -192,7 +192,7 @@
+      * The minimum length that a password must be to be accepted.
+      * Recommended minimum value by NIST = 8 characters.
+      */
+-    public int $minimumPasswordLength = 8;
++    public int $minimumPasswordLength = 1;
+ 
+     /**
+      * --------------------------------------------------------------------
+@@ -206,9 +206,9 @@
+      * @var class-string<ValidatorInterface>[]
+      */
+     public array $passwordValidators = [
+-        'CodeIgniter\Shield\Authentication\Passwords\CompositionValidator',
+-        'CodeIgniter\Shield\Authentication\Passwords\NothingPersonalValidator',
+-        'CodeIgniter\Shield\Authentication\Passwords\DictionaryValidator',
++        // 'CodeIgniter\Shield\Authentication\Passwords\CompositionValidator',
++        // 'CodeIgniter\Shield\Authentication\Passwords\NothingPersonalValidator',
++        // 'CodeIgniter\Shield\Authentication\Passwords\DictionaryValidator',
+         //'CodeIgniter\Shield\Authentication\Passwords\PwnedValidator',
+     ];
+ 
+diff --color -Nru appstarter/app/Config/Filters.php target_local/app/Config/Filters.php
+--- appstarter/app/Config/Filters.php	2022-06-16 14:53:27
++++ target_local/app/Config/Filters.php	2023-07-03 16:48:51
 @@ -34,11 +34,12 @@
      public $globals = [
          'before' => [
@@ -28,56 +50,111 @@ diff -Nru appstarter/app/Config/Filters.php target_local/app/Config/Filters.php
              // 'honeypot',
              // 'secureheaders',
          ],
---- appstarter/app/Config/Routes.php	2022-07-12 17:09:44.000000000 +0200
-+++ target_local/app/Config/Routes.php	2022-07-12 11:14:29.000000000 +0200
+diff --color -Nru appstarter/app/Config/Routes.php target_local/app/Config/Routes.php
+--- appstarter/app/Config/Routes.php	2023-07-04 14:15:40
++++ target_local/app/Config/Routes.php	2023-07-04 12:16:55
 @@ -36,6 +36,7 @@
  // We get a performance increase by specifying the default
  // route since we don't have to scan directories.
  $routes->get('/', 'Home::index');
-+$routes->match(['get','post'],'submitForm', 'ProtectedForm::index');
++$routes->match(['get','post'], 'transfer', 'TransferMoney::index');
  
  service('auth')->routes($routes);
  
-diff -Nru appstarter/app/Controllers/ProtectedForm.php target_local/app/Controllers/ProtectedForm.php
---- appstarter/app/Controllers/ProtectedForm.php	1970-01-01 01:00:00.000000000 +0100
-+++ target_local/app/Controllers/ProtectedForm.php	2022-07-12 11:17:25.000000000 +0200
-@@ -0,0 +1,11 @@
+diff --color -Nru appstarter/app/Controllers/Home.php target_local/app/Controllers/Home.php
+--- appstarter/app/Controllers/Home.php	2022-06-16 14:53:27
++++ target_local/app/Controllers/Home.php	2023-07-04 12:21:17
+@@ -6,6 +6,19 @@
+ {
+     public function index()
+     {
++        if (auth()->getUser())
++        {
++            $users = auth()->getProvider();
++            $user = $users->findById(auth()->getUser()->id);
++
++            $userData = array(
++                'username' => $user->username,
++                'balance' => $user->balance,
++            );
++
++            return view('welcome_message', $userData);
++        }
++
+         return view('welcome_message');
+     }
+ }
+diff --color -Nru appstarter/app/Controllers/TransferMoney.php target_local/app/Controllers/TransferMoney.php
+--- appstarter/app/Controllers/TransferMoney.php	1970-01-01 01:00:00
++++ target_local/app/Controllers/TransferMoney.php	2023-07-04 12:12:51
+@@ -0,0 +1,43 @@
 +<?php
 +
 +namespace App\Controllers;
 +
-+class ProtectedForm extends BaseController
++class TransferMoney extends BaseController
 +{
 +    public function index()
 +    {
-+        return view('submitForm');
++        if (!auth()->getUser())
++        {
++            return "Please login first.";
++
++        } else {
++            // $targetData = array('username' => $_POST["target"]);
++            $users = auth()->getProvider();
++            $target = $users->findByCredentials(array('username' => $_POST["target"]));
++
++            if ($target == null)
++            {
++                return "User " . $_POST["target"] . " does not exist.";
++
++            } else {
++
++                $target->fill(['balance' => $target->balance + $_POST["ammount"]]);
++                $users->save($target);
++
++                $user = $users->findById(auth()->getUser()->id);
++                $user->fill(['balance' => $user->balance - $_POST["ammount"]]);
++                $users->save($user);
++
++                $data = array(
++                    'from'    => $user->username,
++                    'to'      => $target->username,
++                    'ammount' => $_POST["ammount"],
++                );
++                
++                return view('transfer', $data);
++
++            }
++        }
 +    }
 +}
-diff -Nru appstarter/app/Views/submitForm.php target_local/app/Views/submitForm.php
---- appstarter/app/Views/submitForm.php	1970-01-01 01:00:00.000000000 +0100
-+++ target_local/app/Views/submitForm.php	2022-07-11 17:12:26.000000000 +0200
++
+diff --color -Nru appstarter/app/Views/transfer.php target_local/app/Views/transfer.php
+--- appstarter/app/Views/transfer.php	1970-01-01 01:00:00
++++ target_local/app/Views/transfer.php	2023-07-04 12:22:18
 @@ -0,0 +1,11 @@
 +<div class="container">
 +  <div class="row">
 +    <div class="col-12">
 +      <?php if (auth()->getUser()): ?>
-+        <h1>Form successfully submitted as user <?= auth()->user() ->username; ?></h1>
++        <h1>Successfully transferred <?= $ammount; ?> from <?= $from; ?> to <?= $to; ?></h1>
 +      <?php else: ?>
-+        <h1>No user logged in</h1>
++        <h1>Please login first.</h1>
 +      <?php endif; ?>
 +    </div>
 +  </div>
 +</div>
-diff -Nru appstarter/app/Views/welcome_message.php target_local/app/Views/welcome_message.php
---- appstarter/app/Views/welcome_message.php	2022-06-16 15:53:27.000000000 +0200
-+++ target_local/app/Views/welcome_message.php	2022-07-12 12:13:20.000000000 +0200
-@@ -195,128 +195,37 @@
- </head>
+diff --color -Nru appstarter/app/Views/welcome_message.php target_local/app/Views/welcome_message.php
+--- appstarter/app/Views/welcome_message.php	2022-06-16 14:53:27
++++ target_local/app/Views/welcome_message.php	2023-07-04 12:21:45
+@@ -196,127 +196,28 @@
  <body>
  
--<!-- HEADER: MENU + HEROE SECTION -->
+ <!-- HEADER: MENU + HEROE SECTION -->
 -<header>
--
+ 
 -    <div class="menu">
 -        <ul>
 -            <li class="logo"><a href="https://codeigniter.com" target="_blank"><img height="44" title="CodeIgniter Logo"
@@ -96,19 +173,34 @@ diff -Nru appstarter/app/Views/welcome_message.php target_local/app/Views/welcom
 -            </li>
 -        </ul>
 -    </div>
--
++<?php if (isset($username)): ?>
++    Welcome <?= $username; ?>.<br>
++    Your <b>balance</b> is <?= $balance; ?><br>
+ 
 -    <div class="heroe">
--
++    <form action="logout" method="get">
++        <button type="submit">Logout</button>
++    </form><br>
++<?php else: ?>
++    <form action="login" method="get">
++        <button type="submit">Login</button>
++    </form>
++<?php endif; ?>
+ 
 -        <h1>Welcome to CodeIgniter <?= CodeIgniter\CodeIgniter::CI_VERSION ?></h1>
++<form action="transfer"  method="post">
++    <input id="ammount"  type="number" name="ammount" placeholder="ammount">
++    <input id="target"   type="text"   name="target"  placeholder="target"><br>
++    <?= csrf_field() ?><br>
++    <input type="submit" value="Transfer Money">
++</form>
  
 -        <h2>The small framework with powerful features</h2>
 -
 -    </div>
-+<!-- HEADER: MENU + HEROE SECTION -->
- 
-+<header>
- </header>
- 
+-
+-</header>
+-
 -<!-- CONTENT -->
 -
 -<section>
@@ -128,7 +220,7 @@ diff -Nru appstarter/app/Views/welcome_message.php target_local/app/Views/welcom
 -</section>
 -
 -<div class="further">
- 
+-
 -    <section>
 -
 -        <h1>Go further</h1>
@@ -163,30 +255,14 @@ diff -Nru appstarter/app/Views/welcome_message.php target_local/app/Views/welcom
 -             of code and documentation from the community. Why not
 -             <a href="https://codeigniter.com/contribute" target="_blank">
 -             join us</a> ?</p>
-+<div class="container">
-+  <div class="row">
-+        <?php if (auth()->getUser()): ?>
-+            Welcome <?= auth()->user() ->username; ?>.<br>
-+            <a href="logout">Logout!</a>
-+        <?php else: ?>
-+            <br>
-+            <a href="login">Login!</a>
-+        <?php endif; ?>
-+  </div>
-+
-+  <form action="submitForm" method="post">
-+    <?= csrf_field() ?>                
-+    <input type="submit" value="Submit Protected Form">
-+  </form>
-+</div>
- 
+-
 -    </section>
- 
+-
 -</div>
- 
+-
  <!-- FOOTER: DEBUG INFO + COPYRIGHTS -->
- 
- <footer>
+-
+-<footer>
 -    <div class="environment">
 -
 -        <p>Page rendered in {elapsed_time} seconds</p>
@@ -202,8 +278,8 @@ diff -Nru appstarter/app/Views/welcome_message.php target_local/app/Views/welcom
 -
 -    </div>
 -
- </footer>
- 
+-</footer>
+-
 -<!-- SCRIPTS -->
 -
 -<script>
@@ -218,3 +294,25 @@ diff -Nru appstarter/app/Views/welcome_message.php target_local/app/Views/welcom
  
  <!-- -->
  
+diff --color -Nru appstarter/vendor/codeigniter4/shield/src/Database/Migrations/2020-12-28-223112_create_auth_tables.php target_local/vendor/codeigniter4/shield/src/Database/Migrations/2020-12-28-223112_create_auth_tables.php
+--- appstarter/vendor/codeigniter4/shield/src/Database/Migrations/2020-12-28-223112_create_auth_tables.php	2022-07-12 05:57:50
++++ target_local/vendor/codeigniter4/shield/src/Database/Migrations/2020-12-28-223112_create_auth_tables.php	2023-07-03 17:21:30
+@@ -11,6 +11,7 @@
+         // Users Table
+         $this->forge->addField([
+             'id'             => ['type' => 'int', 'constraint' => 11, 'unsigned' => true, 'auto_increment' => true],
++            'balance'        => ['type' => 'int', 'default' => 1000],
+             'username'       => ['type' => 'varchar', 'constraint' => 30, 'null' => true],
+             'status'         => ['type' => 'varchar', 'constraint' => 255, 'null' => true],
+             'status_message' => ['type' => 'varchar', 'constraint' => 255, 'null' => true],
+diff --color -Nru appstarter/vendor/codeigniter4/shield/src/Models/UserModel.php target_local/vendor/codeigniter4/shield/src/Models/UserModel.php
+--- appstarter/vendor/codeigniter4/shield/src/Models/UserModel.php	2022-07-12 05:57:50
++++ target_local/vendor/codeigniter4/shield/src/Models/UserModel.php	2023-07-03 17:21:36
+@@ -21,6 +21,7 @@
+     protected $useSoftDeletes = true;
+     protected $allowedFields  = [
+         'username',
++        'balance',
+         'status',
+         'status_message',
+         'active',

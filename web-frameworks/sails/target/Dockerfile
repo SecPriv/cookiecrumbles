@@ -1,7 +1,8 @@
-FROM node:18
+FROM node:18 as base
 
-EXPOSE 1337
 WORKDIR /usr/src
+
+FROM base AS v1.5.3
 
 RUN npm i -g sails@1.5.3
 RUN echo "1" | sails new test-project

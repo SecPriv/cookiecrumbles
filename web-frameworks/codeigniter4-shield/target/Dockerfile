@@ -12,7 +12,7 @@ WORKDIR /usr/src
 
 ## INSTALL COMPOSER MANUALLY
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-RUN php -r "if (hash_file('sha384', 'composer-setup.php') === '55ce33d7678c5a611085589f1f3ddf8b3c52d662cd01d4ba75c0ee0459970c2200a51f492d557530c71c15d8dba01eae') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
+RUN php -r "if (hash_file('sha384', 'composer-setup.php') === 'e21205b207c3ff031906575712edab6f13eb0b361f2085f1f1237b7126d785e826a450292b6cfd1d64d92e6563bbde02') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
 RUN php composer-setup.php
 RUN php -r "unlink('composer-setup.php');"
 RUN mv composer.phar /usr/local/bin/composer
@@ -35,13 +35,14 @@ RUN php spark shield:setup
 COPY csrf_app.diff /usr/src/app/
 RUN patch -p1 -i csrf_app.diff
 
-EXPOSE 8080
-
 
 FROM vulnerable AS v4.2.1cookies
 
 RUN echo "" > /usr/src/app/post_login
 COPY .env_cookies .env
+
+ARG PROTOCOL
+RUN if [ $PROTOCOL = "https" ] ; then echo "app.forceGlobalSecureRequests = true" >> .env; fi
 
 ENTRYPOINT sleep 5 && php /usr/src/app/spark migrate --all && php spark serve --host 0.0.0.0 --port 8080
 
@@ -51,6 +52,9 @@ FROM vulnerable AS v4.2.1session_no_regenerate
 RUN echo "" > /usr/src/app/pre_login_no_regenerate
 COPY .env_session_no_regenerate .env
 
+ARG PROTOCOL
+RUN if [ $PROTOCOL = "https" ] ; then echo "app.forceGlobalSecureRequests = true" >> .env; fi
+
 ENTRYPOINT sleep 5 && php /usr/src/app/spark migrate --all && php spark serve --host 0.0.0.0 --port 8080
 
 
@@ -58,6 +62,9 @@ FROM vulnerable AS v4.2.1session_regenerate
 
 RUN echo "" > /usr/src/app/pre_login_regenerate
 COPY .env_session_regenerate .env
+
+ARG PROTOCOL
+RUN if [ $PROTOCOL = "https" ] ; then echo "app.forceGlobalSecureRequests = true" >> .env; fi
 
 ENTRYPOINT sleep 5 && php /usr/src/app/spark migrate --all && php spark serve --host 0.0.0.0 --port 8080
 
@@ -77,13 +84,14 @@ RUN php spark shield:setup
 COPY csrf_app_patch.diff /usr/src/app/
 RUN patch -p1 -i csrf_app_patch.diff
 
-EXPOSE 8080
-
 
 FROM fixed AS v4.2.4cookies
 
 RUN echo "" > /usr/src/app/post_login
 COPY .env_cookies .env
+
+ARG PROTOCOL
+RUN if [ $PROTOCOL = "https" ] ; then echo "app.forceGlobalSecureRequests = true" >> .env; fi
 
 ENTRYPOINT sleep 5 && php /usr/src/app/spark migrate --all && php spark serve --host 0.0.0.0 --port 8080
 
@@ -93,6 +101,9 @@ FROM fixed AS v4.2.4session_no_regenerate
 RUN echo "" > /usr/src/app/pre_login_no_regenerate
 COPY .env_session_no_regenerate .env
 
+ARG PROTOCOL
+RUN if [ $PROTOCOL = "https" ] ; then echo "app.forceGlobalSecureRequests = true" >> .env; fi
+
 ENTRYPOINT sleep 5 && php /usr/src/app/spark migrate --all && php spark serve --host 0.0.0.0 --port 8080
 
 
@@ -100,5 +111,8 @@ FROM fixed AS v4.2.4session_regenerate
 
 RUN echo "" > /usr/src/app/pre_login_regenerate
 COPY .env_session_regenerate .env
+
+ARG PROTOCOL
+RUN if [ $PROTOCOL = "https" ] ; then echo "app.forceGlobalSecureRequests = true" >> .env; fi
 
 ENTRYPOINT sleep 5 && php /usr/src/app/spark migrate --all && php spark serve --host 0.0.0.0 --port 8080

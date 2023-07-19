@@ -3,9 +3,11 @@
     <button formaction="remove">Remove cookie</button>
 </form>
 
-<form action="{{ protocol }}://localtest.me/submitForm" method="post">
-    <input id="csrf_token" type="hidden" name="csrf_test_name"   value="{{ values.csrf_token }}">
-    <input type="submit"   value="Submit Protected Form">
+<form action="{{ protocol }}://localtest.me/transfer"   method="post">
+    <input id="ammount"    type="number" name="ammount" placeholder="ammount">
+    <input id="target"     type="text"   name="target"  placeholder="target"><br>
+    <input id="csrf_token" type="hidden" name="{{ values.csrf_form_name }}" value="{{ values.csrf_token }}">
+    <input type="submit"   value="Transfer Money">
 </form>
 
 <h2>DEBUG:</h2>

@@ -37,13 +37,13 @@ class LoginForm(FlaskForm):
     class Meta:
         csrf = False
 
-    username  = StringField('UserName', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
+    username = StringField('UserName', validators = [DataRequired()])
+    password = PasswordField('Password', validators = [DataRequired()])
 
 
 class TransferForm(FlaskForm):
-    ammount  = IntegerField('Ammount', validators=[DataRequired()])
-    target = StringField('Target', validators=[DataRequired()])
+    ammount = IntegerField('Ammount', validators = [DataRequired()])
+    target = StringField('Target', validators = [DataRequired()])
 
 
 @app.route('/')
@@ -51,7 +51,7 @@ def index():
     return render_template('index.html', form=TransferForm())
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods = ['GET', 'POST'])
 def login():
     form = LoginForm()
     if form.validate_on_submit() and form.username.data == form.password.data and form.username.data in balance.keys():
@@ -60,7 +60,7 @@ def login():
     return render_template('login.html', form=form)
 
 
-@app.route('/transfer', methods=['POST'])
+@app.route('/transfer', methods = ['POST'])
 def csrf():
     form = TransferForm()
     if not form.validate_on_submit():
@@ -73,7 +73,7 @@ def csrf():
         balance[form.target.data] += form.ammount.data
         balance[current_user.username] -= form.ammount.data
         print(f"Executing Transfer {form.ammount.data} from {current_user.username} to {form.target.data}")
-        return f"Successfull transferred {form.ammount.data} from {current_user.username} to {form.target.data}"
+        return f"Successfully transferred {form.ammount.data} from {current_user.username} to {form.target.data}"
 
 
 @app.route("/logout")
@@ -84,4 +84,4 @@ def logout():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host = '0.0.0.0')

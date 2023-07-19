@@ -2,9 +2,9 @@
     <button type="submit">Set Pre-session</button>
 </form>
 
-<form action="http://localtest.me/en/admin/post/1/delete" method="post">
-    <input id="csrf_token" type="hidden" name="token" value="{{ values.csrf_token }}">
-    <input type="submit"   value="Try CORF">
+<form action="{{ protocol }}://localtest.me/en/admin/post/1/delete" method="post">
+    <input id="csrf_token" type="hidden" name="{{ values.csrf_form_name }}" value="{{ values.csrf_token }}">
+    <input type="submit"   value="Try Delete Post 1">
 </form>
 
 <h2>DEBUG:</h2>

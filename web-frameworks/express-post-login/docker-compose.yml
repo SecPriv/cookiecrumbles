@@ -2,17 +2,19 @@ services:
   target:
     build: 
       context: target
-      target: "${VERSION:?VERSION is undefined}"
+      target: ${VERSION:?VERSION is undefined}
   attacker:
     build: attacker-post-login
     environment:
-      PROTOCOL: "${PROTOCOL:?PROTOCOL is undefined}"
-    extra_hosts:
-    - "localtest.me:${LOCAL_IP:?LOCAL_IP is undefined}"
+      PROTOCOL: ${PROTOCOL:-http}
     depends_on:
       - target
   server:
     build: server
+    networks:
+      default:
+        aliases:
+          - localtest.me
     ports:
       - 80:80
       - 443:443

@@ -10,20 +10,24 @@ services:
   target:
     build: 
       context: target_blog
-      target: "${VERSION:?VERSION is undefined}"
+      target: ${VERSION:?VERSION is undefined}
+    depends_on:
+      - postgres
     links:
       - postgres
     command: --db_host=postgres
   attacker:
     build: attacker_blog
     environment:
-      PROTOCOL: "${PROTOCOL:?PROTOCOL is undefined}"
-    extra_hosts:
-    - "localtest.me:${LOCAL_IP:?LOCAL_IP is undefined}"
+      PROTOCOL: ${PROTOCOL:-http}
     depends_on:
       - target
   server:
     build: server
+    networks:
+      default:
+        aliases:
+          - localtest.me
     ports:
       - 80:80
       - 443:443

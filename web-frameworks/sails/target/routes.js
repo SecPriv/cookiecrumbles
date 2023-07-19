@@ -15,13 +15,13 @@ module.exports.routes = {
   //  ╚╩╝╚═╝╚═╝╩  ╩ ╩╚═╝╚═╝╚═╝
   // 'GET /':                   { action: 'view-homepage-or-redirect' },
   'GET /':                   { action: 'view-homepage' },
-  'POST /transfer':         { action: 'transfer' },
+  'POST /transfer':          { action: 'transfer' },
   'GET /welcome/:unused?':   { action: 'dashboard/view-welcome' },
 
-  'GET /faq':                { action:   'view-faq' },
-  'GET /legal/terms':        { action:   'legal/view-terms' },
-  'GET /legal/privacy':      { action:   'legal/view-privacy' },
-  'GET /contact':            { action:   'view-contact' },
+  'GET /faq':                { action: 'view-faq' },
+  'GET /legal/terms':        { action: 'legal/view-terms' },
+  'GET /legal/privacy':      { action: 'legal/view-privacy' },
+  'GET /contact':            { action: 'view-contact' },
 
   'GET /signup':             { action: 'entrance/view-signup' },
   'GET /email/confirm':      { action: 'entrance/confirm-email' },

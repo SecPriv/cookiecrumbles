@@ -1,27 +1,27 @@
 {% if mode == 'user' %}
-<form method="GET" action="set_post_session">
+<form action="set_post_session" method="get">
     <p><label>Username for token: <input type="text" name="username"/></label></p>
     <button type="submit">Set Post-session</button>
 </form>
 {% else %}
-<form method="GET" action="set_post_session">
+<form action="set_post_session" method="get">
     <input type="hidden" name="username" value=""/>
     <button type="submit">Set Post-session</button>
 </form>
 {% endif %}
 
 
-<form action="{{ protocol }}://localtest.me/transfer" method="post">
+<form action="{{ protocol }}://localtest.me/transfer"   method="post">
     <input id="ammount"    type="number" name="ammount" placeholder="ammount">
     <input id="target"     type="text"   name="target"  placeholder="target"><br>
-    <input id="csrf_token" type="hidden" name="_csrf"   value="{{ values.csrf_token }}">
+    <input id="csrf_token" type="hidden" name="{{ values.csrf_form_name }}" value="{{ values.csrf_token }}">
     <input type="submit"   value="Transfer Money">
 </form>
 
-<form action="{{ protocol }}://localtest.me/transfer" method="post">
+<form action="{{ protocol }}://localtest.me/transfer"   method="post">
     <input id="ammount"    type="number" name="ammount" placeholder="ammount">
     <input id="target"     type="text"   name="target"  placeholder="target"><br>
-    <input id="csrf_token" type="hidden" name="_csrf"   value="BLA">
+    <input id="csrf_token" type="hidden" name="{{ values.csrf_form_name }}" value="BLA">
     <input type="submit"   value="Fail Transfer Money (Wrong token)">
 </form>
 

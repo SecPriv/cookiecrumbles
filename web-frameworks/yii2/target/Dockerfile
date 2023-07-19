@@ -16,9 +16,8 @@ WORKDIR /usr/src/app
 COPY csrf_app.diff /usr/src/app/
 RUN patch -p1 -i csrf_app.diff
 
-# ### enable CSRF in session
+# ### enable CSRF with Syncrhronizer Token Pattern
 # COPY session.diff /usr/src/app/
 # RUN patch -p1 -i session.diff
 
-EXPOSE 8080
 CMD ./yii serve 0.0.0.0 --port 8080

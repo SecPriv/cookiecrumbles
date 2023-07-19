@@ -2,10 +2,10 @@
     <button type="submit">Set Pre-session</button>
 </form>
 
-<form action="http://localtest.me/transfer" method="post">
+<form action="{{ protocol }}://localtest.me/transfer"   method="post">
     <input id="ammount"    type="number" name="ammount" placeholder="ammount">
     <input id="target"     type="text"   name="target"  placeholder="target"><br>
-    <input id="csrf_token" type="hidden" name="_csrf"   value="{{ values.csrf_token }}">
+    <input id="csrf_token" type="hidden" name="{{ values.csrf_form_name }}" value="{{ values.csrf_token }}">
     <input type="submit"   value="Transfer Money">
 </form>
 

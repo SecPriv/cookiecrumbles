@@ -2,18 +2,22 @@ services:
   target:
     build: 
       context: target
+      target: ${VERSION:?VERSION is undefined}
   attacker:
     build: attacker
     environment:
-      PROTOCOL: "http"
+      PROTOCOL: ${PROTOCOL:-http}
     depends_on:
       - target
   server:
     build: server
+    networks:
+      default:
+        aliases:
+          - localtest.me
     ports:
       - 80:80
       - 443:443
     depends_on:
       - target
       - attacker
-

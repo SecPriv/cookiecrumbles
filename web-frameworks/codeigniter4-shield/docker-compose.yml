@@ -2,20 +2,24 @@ services:
   target:
     build: 
       context: target
-      target: "${VERSION:-}${MODE:?MODE is undefined}"
+      target: "${VERSION:?VERSION is undefined}${MODE:?MODE is undefined}"
+      args:
+        PROTOCOL: ${PROTOCOL:-http}
     depends_on:
       db:
         condition: service_healthy
   attacker:
     build: "attacker_$MODE"
     environment:
-      PROTOCOL: "${PROTOCOL:?PROTOCOL is undefined}"
-    extra_hosts:
-    - "localtest.me:${LOCAL_IP:?LOCAL_IP is undefined}"
+      PROTOCOL: ${PROTOCOL:-http}
     depends_on:
       - target
   server:
     build: server
+    networks:
+      default:
+        aliases:
+          - localtest.me
     ports:
       - 80:80
       - 443:443

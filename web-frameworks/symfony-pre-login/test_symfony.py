@@ -1,10 +1,15 @@
 import requests
 from bs4 import BeautifulSoup
 import random
+import os
 
 
-TARGET = 'http://localtest.me/'
-ATTACKER = 'http://attack.localtest.me/'
+try:
+    PROTOCOL = os.environ['PROTOCOL']
+except:
+    PROTOCOL = 'http'
+TARGET = f'{PROTOCOL}://localtest.me/'
+ATTACKER = f'{PROTOCOL}://attack.localtest.me/'
 PRIVATE_KEY = './server/localtest.me.crt'
 USER1 = 'jane_admin'
 ### USER2 login is broken

