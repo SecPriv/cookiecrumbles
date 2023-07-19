@@ -161,7 +161,7 @@ For our purposes, this makes the Sails model identical to Express.
 
 - Apply the fix and run proverif
   ```sh
-  stdbuf -o0 make -B CFLAGS=-DREFRESH_TOKEN_LOGIN run-sails
+  stdbuf -o0 make -B "CFLAGS=-DREFRESH_TOKEN_LOGIN -DREFRESH_SESSION_ID" run-sails
   ```
 
 ### Fastify
@@ -171,7 +171,7 @@ Fastify provides two modes, which configure the session to be stored either at t
 - Apply the fix and run proverif
   ```sh
   stdbuf -o0 make -B CFLAGS=-DREFRESH_TOKEN_LOGIN run-fastify_client
-  stdbuf -o0 make -B CFLAGS=-DREFRESH_TOKEN_LOGIN run-fastify_server
+  stdbuf -o0 make -B "CFLAGS=-DREFRESH_TOKEN_LOGIN -DREFRESH_SESSION_ID" run-fastify_server
   ```
 
 
