@@ -1,6 +1,8 @@
 Browser Testing Suite
 =====================
-This folder contains the test suite to verify cookie behavior in different browsers. The test suite can be used to validate the results presented in Table 2 of the paper. In the following, we describe how to setup the test suite and how to interpret the results using Firefox-104.
+This folder contains the test suite to verify cookie behavior in different browsers. The test suite can be used to validate the results relevant to browsers presented in Table 2 of the paper. Server-side parsing issues can be tested with their own artifact under the `reflectors/` directory. Parser-chaining problems only affected a paid AWS service that was fixed after our report, thus we could not include a test for it.
+
+In the following, we describe how to setup the test suite and how to interpret the results using Firefox-104.
 
 
 Setup
