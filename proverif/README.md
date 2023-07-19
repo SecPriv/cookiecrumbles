@@ -120,6 +120,9 @@ Query not event(app_action_begin(b_9,token_7)) cannot be proved.
 Query event(app_action_successful(cp_9,token_7)) ==> event(app_action_begin(b_9,token_7)) is true.
 ```
 
+Each framework model implements the fix of refreshing the token upon login using the conditional compilation (`#ifdef`) capabilities offered by the `cpp` preprocessor. In particular, defining the flag `REFRESH_TOKEN_LOGIN` (i.e., passing the `CFLAGS=-DREFRESH_TOKEN_LOGIN` parameter to `make`) selects the fixed framework implementation. 
+Note that in case of Express, the additional flag `REFRESH_SESSION_ID` is required, since also the session dentifier need to be refreshed.
+
 ### Flask
 
 - Apply the fix and run proverif
@@ -188,7 +191,13 @@ The summary of the verification result for all frameworks can be obtained with t
 
 ```sh
 for FW in flask koa express symfony sails fastify_client fastify_server codeigniter; do
-  echo $FW
+  echo "===== $FW ====="
+  echo "default configuration:"
+  timeout 2m stdbuf -o0 make -B run-$FW |& grep RESULT
+  echo "fixed version:"
   stdbuf -o0 make -B "CFLAGS=-DREFRESH_TOKEN_LOGIN -DREFRESH_SESSION_ID" run-$FW |& grep RESULT
 done
 ```
+
+The loop prints the verification result before and after applying the fix.
+Note that we enable both the `REFRESH_TOKEN_LOGIN` and `REFRESH_SESSION_ID` flags since `REFRESH_SESSION_ID` is required for Express and ignored by all other framework models.
