@@ -86,7 +86,7 @@ def parse_set_cookie(cookie):
 
 
 def process_dir(dirname):
-    for fname in os.listdir(dirname):
+    for fname in sorted(os.listdir(dirname)):
         parse_csv(os.path.join(dirname, fname))
 
 def parse_csv(fname):
